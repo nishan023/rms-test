@@ -1,14 +1,205 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+
+// ENUMS
+
+
+enum Role {
+  admin
+}
+
+enum TableType {
+  PHYSICAL
+  NAME_BASED
+  ONLINE
+}
+
+enum OrderStatus {
+  pending
+  preparing
+  served
+  paid
+  cancelled
+}
+
+enum PaymentMethod {
+  CASH
+  ONLINE
+  MIXED
+  CREDIT
+}
+
+
+// ADMIN PROFILE
+model Profile {
+  id        String   @id @db.Uuid // references auth.users.id
+  email     String   @unique
+  password  String
+  role      Role     @default(admin)
+  createdAt DateTime @default(now())
+
+  @@map("profiles")
+}
+
+
+// TABLES (Physical + Virtual)
+model Table {
+  id        String    @id @default(uuid()) @db.Uuid
+  tableCode String    @unique
+  tableType TableType
+  qrToken   String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+
+  orders    Order[]
+
+  @@map("tables")
+}
+
+
+// MENU
+model MenuCategory {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique
+  createdAt DateTime   @default(now())
+
+  items     MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String
+  categoryId  String
+  price       Decimal
+  isAvailable Boolean       @default(true)
+  isSpecial   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category    MenuCategory  @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+
+  @@map("menu_items")
+}
+
+
+// CUSTOMERS (CREDIT / LEDGER)
+
+model Customer {
+  id          String    @id @default(uuid()) @db.Uuid
+  fullName    String
+  phoneNumber String    @unique
+  totalDue    Decimal   @default(0)
+  createdAt   DateTime  @default(now())
+
+  orders      Order[]
+  ledger      CreditTransaction[]
+
+  @@map("customers")
+}
+
+// ORDERS
+model Order {
+  id               String        @id @default(uuid()) @db.Uuid
+  tableId          String
+  customerId       String?
+  customerPhone    String?
+  status           OrderStatus   @default(pending)
+
+  totalAmount      Decimal       @default(0)
+  discountAmount   Decimal       @default(0)
+  dueAmount        Decimal       @default(0)
+
+  cashAmount       Decimal       @default(0)
+  onlineAmount     Decimal       @default(0)
+
+  paymentMethod    PaymentMethod?
+  paymentDetails   String?
+  customerMessage  String?
+
+  servedItemCount  Int           @default(0)
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  table            Table         @relation(fields: [tableId], references: [id])
+  customer         Customer?     @relation(fields: [customerId], references: [id])
+  items            OrderItem[]
+  payments         Payment[]
+  creditEntries    CreditTransaction[]
+
+  @@index([tableId, status])
+  @@map("orders")
+}
+
+
+// ORDER ITEMS
+model OrderItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  orderId       String
+  menuItemId    String
+  quantity      Int
+  priceSnapshot Decimal
+  createdAt     DateTime @default(now())
+
+  order         Order    @relation(fields: [orderId], references: [id])
+  menuItem      MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@map("order_items")
+}
+
+// PAYMENTS
+model Payment {
+  id            String        @id @default(uuid()) @db.Uuid
+  orderId       String
+  method        PaymentMethod
+  cashAmount    Decimal       @default(0)
+  onlineAmount  Decimal       @default(0)
+  createdAt     DateTime      @default(now())
+
+  order         Order         @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+// CREDIT LEDGER
+model CreditTransaction {
+  id          String    @id @default(uuid()) @db.Uuid
+  customerId  String
+  orderId     String
+  amount      Decimal
+  createdAt   DateTime  @default(now())
+
+  customer    Customer @relation(fields: [customerId], references: [id])
+  order       Order    @relation(fields: [orderId], references: [id])
+
+  @@map("credit_transactions")
+}
+
+
+// INVENTORY
+model Inventory {
+  id               String   @id @default(uuid()) @db.Uuid
+  itemName         String
+  supplierName     String?
+  supplierPhone    String?
+  quantity         Decimal
+  unit             String
+  costPerUnit      Decimal
+  totalCost        Decimal
+  amountPaid       Decimal  @default(0)
+  remainingAmount  Decimal  @default(0)
+  purchaseDate     DateTime @default(now())
+  paymentStatus    String   @default("pending")
+
+  @@map("inventory")
 }

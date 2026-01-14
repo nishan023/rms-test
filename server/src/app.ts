@@ -1,7 +1,8 @@
 import express from "express";
 const app = express();
-import authRoutes from './routes/auth.router.js';
-import tableRoutes from './routes/table.routes.js';
+import authRoutes from './routes/auth.router.ts';
+import tableRoutes from './routes/table.router.ts';
+import menuRoutes from './routes/menu.router.ts';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -9,6 +10,7 @@ app.use('/public', express.static('public'));
 
 app.use('/auth', authRoutes);
 app.use('/tables', tableRoutes);
+app.use('/menu', menuRoutes);
 
 
 app.get('/', (req, res) => {

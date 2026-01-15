@@ -32,6 +32,18 @@ enum PaymentMethod {
   CREDIT
 }
 
+enum CreditTransactionType {
+  CHARGE
+  PAYMENT
+}
+
+enum TransactionType {
+  PURCHASE
+  ORDER_CONSUMPTION
+  ADJUSTMENT
+  RETURN
+}
+
 
 // ADMIN PROFILE
 model Profile {
@@ -75,6 +87,7 @@ model MenuItem {
   id          String        @id @default(uuid()) @db.Uuid
   name        String
   categoryId  String        @db.Uuid
+  categoryId  String        @db.Uuid
   price       Decimal
   isAvailable Boolean       @default(true)
   isSpecial   Boolean       @default(false)
@@ -109,6 +122,8 @@ model Customer {
 // ORDERS
 model Order {
   id               String        @id @default(uuid()) @db.Uuid
+  tableId          String        @db.Uuid
+  customerId       String?       @db.Uuid
   tableId          String        @db.Uuid
   customerId       String?       @db.Uuid
   customerPhone    String?
@@ -146,6 +161,8 @@ model OrderItem {
   id            String   @id @default(uuid()) @db.Uuid
   orderId       String   @db.Uuid
   menuItemId    String   @db.Uuid
+  orderId       String   @db.Uuid
+  menuItemId    String   @db.Uuid
   quantity      Int
   priceSnapshot Decimal
   createdAt     DateTime @default(now())
@@ -159,6 +176,7 @@ model OrderItem {
 // PAYMENTS
 model Payment {
   id            String        @id @default(uuid()) @db.Uuid
+  orderId       String        @db.Uuid
   orderId       String        @db.Uuid
   method        PaymentMethod
   cashAmount    Decimal       @default(0)
@@ -176,10 +194,12 @@ model CreditTransaction {
   customerId  String    @db.Uuid
   orderId     String    @db.Uuid
   amount      Decimal
+  type        CreditTransactionType @default(CHARGE)
+  description String?
   createdAt   DateTime  @default(now())
 
   customer    Customer @relation(fields: [customerId], references: [id])
-  order       Order    @relation(fields: [orderId], references: [id])
+  order       Order?   @relation(fields: [orderId], references: [id])
 
   @@map("credit_transactions")
 }

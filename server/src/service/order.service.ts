@@ -86,6 +86,15 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
         where: { id: order.id },
         data: { totalAmount: currentTotal }
     });
+    
+    // 6. Deduct Inventory Stock
+    // We do this asynchronously or synchronously? Sync for now to ensure consistency.
+    // Note: If this fails, order is still placed. We might want a transaction but keeping it simple.
+    try {
+        await import('./inventory.service.js').then(s => s.deductStockForOrderService(order.id, items));
+    } catch (err) {
+        console.error("Failed to deduct inventory:", err);
+    }
 
     //Notify Admin (Socket.io) - TODO
     return { message: 'Order placed successfully', orderId: order.id };

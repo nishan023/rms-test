@@ -7,10 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-
-// ENUMS
-
-
 enum Role {
   admin
 }
@@ -78,18 +74,21 @@ model MenuCategory {
 model MenuItem {
   id          String        @id @default(uuid()) @db.Uuid
   name        String
-  categoryId  String
+  categoryId  String        @db.Uuid
   price       Decimal
   isAvailable Boolean       @default(true)
   isSpecial   Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+
   category    MenuCategory  @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
+  recipes     ItemRecipe[]
 
   @@map("menu_items")
 }
+
 
 
 // CUSTOMERS (CREDIT / LEDGER)
@@ -110,8 +109,8 @@ model Customer {
 // ORDERS
 model Order {
   id               String        @id @default(uuid()) @db.Uuid
-  tableId          String
-  customerId       String?
+  tableId          String        @db.Uuid
+  customerId       String?       @db.Uuid
   customerPhone    String?
   status           OrderStatus   @default(pending)
 
@@ -145,8 +144,8 @@ model Order {
 // ORDER ITEMS
 model OrderItem {
   id            String   @id @default(uuid()) @db.Uuid
-  orderId       String
-  menuItemId    String
+  orderId       String   @db.Uuid
+  menuItemId    String   @db.Uuid
   quantity      Int
   priceSnapshot Decimal
   createdAt     DateTime @default(now())
@@ -160,7 +159,7 @@ model OrderItem {
 // PAYMENTS
 model Payment {
   id            String        @id @default(uuid()) @db.Uuid
-  orderId       String
+  orderId       String        @db.Uuid
   method        PaymentMethod
   cashAmount    Decimal       @default(0)
   onlineAmount  Decimal       @default(0)
@@ -174,8 +173,8 @@ model Payment {
 // CREDIT LEDGER
 model CreditTransaction {
   id          String    @id @default(uuid()) @db.Uuid
-  customerId  String
-  orderId     String
+  customerId  String    @db.Uuid
+  orderId     String    @db.Uuid
   amount      Decimal
   createdAt   DateTime  @default(now())
 
@@ -186,8 +185,50 @@ model CreditTransaction {
 }
 
 
-// INVENTORY
-model Inventory {
+// INVENTORY & STOCK
+model InventoryItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  currentStock Int      @default(0) // Integers for countable items
+  minimumStock Int      @default(5)
+  unit         String   @default("pcs")
+  updatedAt    DateTime @updatedAt
+
+  transactions InventoryTransaction[]
+  recipes      ItemRecipe[]
+
+  @@map("inventory_items")
+}
+
+model InventoryTransaction {
+  id              String        @id @default(uuid()) @db.Uuid
+  inventoryItemId String        @db.Uuid
+  type            TransactionType
+  quantity        Int
+  referenceId     String?       // Could be OrderId or PurchaseRecordId
+  createdAt       DateTime      @default(now())
+
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@map("inventory_transactions")
+}
+
+model ItemRecipe {
+  id              String        @id @default(uuid()) @db.Uuid
+  menuItemId      String        @db.Uuid
+  inventoryItemId String        @db.Uuid
+  quantityRequired Int          @default(1)
+
+  menuItem        MenuItem      @relation(fields: [menuItemId], references: [id])
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@unique([menuItemId, inventoryItemId])
+  @@map("item_recipes")
+}
+
+
+// PURCHASES (Formerly Inventory)
+model PurchaseRecord {
   id               String   @id @default(uuid()) @db.Uuid
   itemName         String
   supplierName     String?
@@ -201,5 +242,12 @@ model Inventory {
   purchaseDate     DateTime @default(now())
   paymentStatus    String   @default("pending")
 
-  @@map("inventory")
+  @@map("purchase_records")
+}
+
+enum TransactionType {
+  PURCHASE
+  ORDER_CONSUMPTION
+  ADJUSTMENT
+  RETURN
 }

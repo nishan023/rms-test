@@ -50,7 +50,7 @@ enum TransactionType {
 
 // ADMIN PROFILE
 model Profile {
-  id        String   @id @db.Uuid // references auth.users.id
+  id        String   @id @db.Uuid 
   email     String   @unique
   password  String
   role      Role     @default(admin)
@@ -261,4 +261,3 @@ model PurchaseRecord {
 
   @@map("purchase_records")
 }
-

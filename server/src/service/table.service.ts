@@ -9,12 +9,10 @@ import { TableType } from '@prisma/client';
 export const generateQRService = async ({ tableCode }: { tableCode: string }) => {
     if (!tableCode) throw new AppError('Table code is required', 400);
 
-    // Check if table exists
     let table = await prisma.table.findUnique({
         where: { tableCode },
     });
 
-    // Create if not exists
     if (!table) {
         table = await prisma.table.create({
             data: {

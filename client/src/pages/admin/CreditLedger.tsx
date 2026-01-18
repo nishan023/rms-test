@@ -12,15 +12,20 @@ import { toast } from 'react-hot-toast';
 
 const CreditLedger: React.FC = () => {
   const navigate = useNavigate();
-  const { customers, getTotalOutstanding, settleDebt, error, clearError } = useCreditStore();
+  const { customers, fetchCustomers, getTotalOutstanding, settleDebt, error, clearError } = useCreditStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [settlementAmount, setSettlementAmount] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Fetch customers from database on mount
+  React.useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
   const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.phone.includes(searchQuery)
+    (c.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (c.phone || '').includes(searchQuery)
   );
 
   const totalOutstanding = getTotalOutstanding();
@@ -46,7 +51,7 @@ const CreditLedger: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">Credit Ledger</h1>
           <p className="text-gray-600 mt-1">Manage customer credit accounts</p>
         </div>
-        <Button 
+        <Button
           icon={<Plus className="w-5 h-5" />}
           onClick={() => setShowAddModal(true)}
         >
@@ -96,9 +101,9 @@ const CreditLedger: React.FC = () => {
               <AlertCircle className="w-6 h-6 text-yellow-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Near Limit</p>
+              <p className="text-sm text-gray-600">With Debt</p>
               <p className="text-2xl font-bold text-yellow-600">
-                {customers.filter(c => c.totalCredit >= c.creditLimit * 0.8).length}
+                {customers.filter(c => c.totalCredit > 0).length}
               </p>
             </div>
           </div>
@@ -149,7 +154,7 @@ const CreditLedger: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {customer.totalCredit >= customer.creditLimit * 0.8 && (
+                {customer.creditLimit && customer.totalCredit >= customer.creditLimit * 0.8 && (
                   <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
                     Near Limit
                   </span>
@@ -159,28 +164,27 @@ const CreditLedger: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="bg-red-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Outstanding</p>
-                  <p className="text-xl font-bold text-red-600">Rs. {customer.totalCredit.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-red-600">Rs. {(customer.totalCredit || 0).toLocaleString()}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Credit Limit</p>
-                  <p className="text-xl font-bold text-gray-800">Rs. {customer.creditLimit.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-gray-800">Rs. {(customer.creditLimit || 0).toLocaleString()}</p>
                 </div>
               </div>
 
               {/* Credit Usage Bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Available: Rs. {(customer.creditLimit - customer.totalCredit).toLocaleString()}</span>
-                  <span>{((customer.totalCredit / customer.creditLimit) * 100).toFixed(0)}%</span>
+                  <span>Available: Rs. {((customer.creditLimit || 0) - (customer.totalCredit || 0)).toLocaleString()}</span>
+                  <span>{(customer.creditLimit ? ((customer.totalCredit || 0) / customer.creditLimit * 100).toFixed(0) : 0)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className={`h-2 rounded-full transition-all ${
-                      customer.totalCredit >= customer.creditLimit * 0.8 ? 'bg-red-500' :
-                      customer.totalCredit >= customer.creditLimit * 0.5 ? 'bg-yellow-500' :
-                      'bg-green-500'
-                    }`}
-                    style={{ width: `${Math.min((customer.totalCredit / customer.creditLimit) * 100, 100)}%` }}
+                    className={`h-2 rounded-full transition-all ${(customer.totalCredit || 0) >= (customer.creditLimit || 1) * 0.8 ? 'bg-red-500' :
+                      (customer.totalCredit || 0) >= (customer.creditLimit || 1) * 0.5 ? 'bg-yellow-500' :
+                        'bg-green-500'
+                      }`}
+                    style={{ width: `${customer.creditLimit ? Math.min(((customer.totalCredit || 0) / customer.creditLimit) * 100, 100) : 0}%` }}
                   />
                 </div>
               </div>

@@ -12,7 +12,7 @@
 //   status: "pending" | "preparing" | "completed";
 //   createdAt: string; // ISO string from backend
 //   tableCode?: string;
-//   customerType: "DINE-IN" | "WALK-IN" | "ONLINE";
+//   customerType: "DINE_IN" | "WALK_IN" | "ONLINE";
 //   customerName?: string;
 //   mobileNumber?: string;
 // }
@@ -24,7 +24,7 @@
 //   createOrder: (payload: {
 //     items: (MenuItem & { quantity: number })[];
 //     tableCode?: string;
-//     customerType: "DINE-IN" | "WALK-IN" | "ONLINE";
+//     customerType: "DINE_IN" | "WALK_IN" | "ONLINE";
 //     customerName?: string;
 //     mobileNumber?: string;
 //   }) => Promise<CustomerOrder | null>;
@@ -136,7 +136,7 @@ export interface CustomerOrder {
   status: "pending" | "preparing" | "served" | "paid" | "cancelled";
   createdAt: string;
   tableCode?: string;
-  customerType: "DINE-IN" | "WALK-IN" | "ONLINE";
+  customerType: "DINE_IN" | "WALK_IN" | "ONLINE";
   customerName?: string;
   mobileNumber?: string;
 }
@@ -148,7 +148,7 @@ interface CustomerOrderStore {
   createOrder: (payload: {
     items: (MenuItem & { quantity: number })[];
     tableCode?: string;
-    customerType: "DINE-IN" | "WALK-IN" | "ONLINE";
+    customerType: "DINE_IN" | "WALK_IN" | "ONLINE";
     customerName?: string;
     mobileNumber?: string;
   }) => Promise<CustomerOrder | null>;
@@ -173,7 +173,7 @@ export const useCustomerOrderStore = create<CustomerOrderStore>((set, get) => ({
         quantity: item.quantity
       }));
 
-      const newOrder = await createOrder({
+      const response = await createOrder({
         items: mappedItems,
         tableCode,
         customerType,
@@ -181,8 +181,11 @@ export const useCustomerOrderStore = create<CustomerOrderStore>((set, get) => ({
         mobileNumber
       });
 
-      if (!newOrder) {
-        throw new Error("Order creation failed - no response from server");
+      // Handle both wrapped { order: ... } and direct order responses
+      const newOrder = response?.order || response;
+
+      if (!newOrder || !newOrder.orderId) {
+        throw new Error("Order creation failed - invalid response from server");
       }
 
       set({
@@ -190,8 +193,7 @@ export const useCustomerOrderStore = create<CustomerOrderStore>((set, get) => ({
         orders: [...get().orders, newOrder]
       });
 
-      toast.success("Order placed successfully!");
-      console.log(newOrder)
+      toast.success(response?.message || "Order placed successfully!");
       return newOrder;
     } catch (error: any) {
       console.error("Create order failed:", error);

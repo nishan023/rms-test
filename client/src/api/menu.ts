@@ -3,14 +3,14 @@
 import api from './axios';
 
 // Add menu item
-export async function addMenuItem(formData: FormData): Promise<any> {
-  const response = await api.post('/menu/admin', formData);
+export async function addMenuItem(data: any): Promise<any> {
+  const response = await api.post('/menu/admin', data);
   return response.data;
 }
 
 // Update/Edit menu item by ID
-export async function updateMenuItem(id: string, formData: FormData): Promise<any> {
-  const response = await api.put(`/menu/admin/${id}`, formData);
+export async function updateMenuItem(id: string, data: any): Promise<any> {
+  const response = await api.put(`/menu/admin/${id}`, data);
   return response.data;
 }
 

@@ -5,6 +5,7 @@ import OrdersExportPrint from "../../components/admin/OrdersExportPrint";
 import ToggleSideBar from "../../components/admin/ToggleSideBar";
 import ViewOrderDetailsModal from "../../components/admin/ViewOrderDetailsModal";
 import { useOrderStore } from "../../store/useOrderStore";
+import type { Order } from "../../types/order";
 
 const AdminOrdersView = () => {
     const {
@@ -58,11 +59,10 @@ const AdminOrdersView = () => {
                         <button
                             key={status}
                             onClick={() => setSelectedStatus(status)}
-                            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
-                                selectedStatus === status
-                                    ? 'bg-orange-600 text-white'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                            }`}
+                            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${selectedStatus === status
+                                ? 'bg-orange-600 text-white'
+                                : 'bg-white text-gray-700 hover:bg-gray-100'
+                                }`}
                         >
                             {status?.charAt(0).toUpperCase() + status.slice(1)}
                         </button>
@@ -88,11 +88,16 @@ const AdminOrdersView = () => {
                         {orders && orders.length > 0 ? (
                             orders.map((order) => {
                                 // Safe fallback for order ID display
-                                const displayId = order.orderNumber 
-                                    ? `Order #${order.orderNumber}` 
-                                    : order.id 
-                                        ? `Order #${order.id.slice(0, 8)}` 
+                                const tableInfo = order.table?.tableCode || order.tableNumber;
+                                const displayId = order.orderNumber
+                                    ? `Order #${order.orderNumber}`
+                                    : order.id
+                                        ? `Order #${order.id.slice(0, 8)}`
                                         : 'Order #N/A';
+
+                                const headerText = tableInfo
+                                    ? `[${tableInfo}] ${displayId}`
+                                    : displayId;
 
                                 return (
                                     <div
@@ -101,27 +106,23 @@ const AdminOrdersView = () => {
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div>
-                                                <h3 className="font-bold text-lg">{displayId}</h3>
-                                                {order.tableNumber && (
-                                                    <p className="text-sm text-gray-600">Table {order.tableNumber}</p>
-                                                )}
+                                                <h3 className="font-bold text-lg">{headerText}</h3>
                                                 {order.customerName && (
                                                     <p className="text-sm text-gray-600">{order.customerName}</p>
                                                 )}
                                             </div>
 
                                             <span
-                                                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                    order.status === 'served'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : order.status === 'preparing'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : order.status === 'cancelled'
-                                                                ? 'bg-gray-100 text-gray-800'
-                                                                : 'bg-red-100 text-red-800'
-                                                }`}
+                                                className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'served'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : order.status === 'preparing'
+                                                        ? 'bg-yellow-100 text-yellow-800'
+                                                        : order.status === 'cancelled'
+                                                            ? 'bg-gray-100 text-gray-800'
+                                                            : 'bg-red-100 text-red-800'
+                                                    }`}
                                             >
-                                                {order?.status.toUpperCase()}
+                                                {order?.status?.toUpperCase() || 'PENDING'}
                                             </span>
                                         </div>
 

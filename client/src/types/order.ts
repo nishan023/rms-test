@@ -1,28 +1,38 @@
-import type { MenuItem } from './menu';
+
+export type OrderStatus = 'pending' | 'preparing' | 'served' | 'paid' | 'cancelled';
+export type PaymentMethod = 'CASH' | 'ONLINE' | 'MIXED' | 'CREDIT';
+export type DiscountType = 'PERCENT' | 'FIXED';
+export type CustomerType = 'DINE_IN' | 'WALK_IN' | 'ONLINE';
+
+export interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  menuItem: {
+    name: string;
+    price: number;
+  };
+}
 
 export interface Order {
   id: string;
   orderNumber?: string;
-  tableNumber: string;
-  items: MenuItem[];
-  totalAmount: number;
-  
-  // ⭐ NEW FIELDS ADDED
-  discount?: {
-    type: 'fixed' | 'percentage';
-    value: number;
-    amount: number;
+  table?: {
+    tableCode: string;
+    tableType: string;
   };
-  finalAmount?: number;
-  paymentMethod?: 'cash' | 'online' | 'credit' | 'mixed';
-  paymentStatus?: 'unpaid' | 'partial' | 'paid';
-  
-  status: 'pending' | 'preparing' | 'served' | 'cancelled';
-  createdAt: Date;
-  updatedAt?: Date;
-  completedAt?: Date;
+  tableNumber?: string; // Mapped fallback
   customerName?: string;
   customerPhone?: string;
+  status: OrderStatus;
+  totalAmount: number;
+  finalAmount?: number;
+  items: OrderItem[];
+  createdAt?: string;
+  updatedAt?: string;
+  paymentMethod?: PaymentMethod;
+  discountType?: DiscountType;
+  discountValue?: number;
+  finalAmountAfterDiscount?: number;
   notes?: string;
-  serverId?: string;
 }

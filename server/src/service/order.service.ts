@@ -18,9 +18,13 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
     const { tableCode, items, mobileNumber, customerName, customerType } = data;
     let targetTableCode = tableCode;
 
+    if (customerType === 'WALK_IN' && !targetTableCode) {
+        // Generate a unique virtual table for each walk-in to prevent merging
+        targetTableCode = `WALKIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    }
+
     if (!targetTableCode) {
         if (customerType === 'ONLINE') targetTableCode = 'ONLINE';
-        else if (customerType === 'WALK_IN') targetTableCode = 'WALK-IN';
         else throw new AppError('Table code is required', 400);
     }
 
@@ -41,7 +45,16 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
         }
     }
 
-    // 2. Check for OPEN (pending/preparing) order.
+    // 2. Resolve Customer Account (if mobile number provided)
+    let customerId: string | undefined = undefined;
+    if (mobileNumber) {
+        const customer = await prisma.customer.findUnique({ where: { phoneNumber: mobileNumber } });
+        if (customer) {
+            customerId = customer.id;
+        }
+    }
+
+    // 3. Check for OPEN (pending/preparing/served) order on this table.
     const activeStatuses: any[] = ['pending', 'preparing', 'served'];
 
     let order: any = await prisma.order.findFirst({
@@ -52,15 +65,27 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
         include: { items: true }
     });
 
-    // 3. Create or Update
+    // 4. Create or Update
     if (!order) {
         order = await prisma.order.create({
             data: {
                 tableId: table.id,
+                customerId: customerId ?? null,
+                customerName: customerName ?? null,
                 customerPhone: mobileNumber ?? null,
                 status: 'pending',
             },
             include: { items: true }
+        });
+    } else {
+        // Update existing order info if provided
+        await prisma.order.update({
+            where: { id: order.id },
+            data: {
+                customerName: customerName ?? order.customerName,
+                customerPhone: mobileNumber ?? order.customerPhone,
+                customerId: customerId ?? order.customerId
+            }
         });
     }
 
@@ -115,22 +140,50 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
     try {
         const { getIO } = await import('../socket.ts');
         const io = getIO();
-        const eventName = order.items.length === items.length ? 'order:new' : 'order:updated'; // Simple heuristic, refine if needed
+        const eventName = order.items.length === items.length ? 'order:new' : 'order:updated';
 
         io.emit(eventName, {
             orderId: order.id,
-            tableCode,
+            tableCode: targetTableCode,
             totalAmount: currentTotal,
             items: order.items
         });
-
-
-
     } catch (err) {
         console.error("Socket emit failed:", err);
     }
 
-    return { message: 'Order placed successfully', orderId: order.id };
+    // Re-fetch the full order with items and table details to return to the frontend
+    const fullOrder = await prisma.order.findUnique({
+        where: { id: order.id },
+        include: {
+            items: {
+                include: {
+                    menuItem: {
+                        select: {
+                            name: true,
+                            price: true
+                        }
+                    }
+                }
+            },
+            table: {
+                select: {
+                    tableCode: true
+                }
+            }
+        }
+    });
+
+    if (!fullOrder) throw new AppError('Order not found after creation', 500);
+
+    return {
+        message: 'Order placed successfully',
+        order: {
+            ...fullOrder,
+            orderId: fullOrder.id, // for frontend compatibility
+            totalAmount: Number(fullOrder.totalAmount)
+        }
+    };
 };
 
 export const getOrderService = async (id: string) => {

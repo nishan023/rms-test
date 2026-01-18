@@ -23,8 +23,8 @@ interface MenuStore {
   setSearchQuery: (query: string) => void;
 
   fetchAll: () => Promise<void>;
-  addItem: (formData: FormData) => Promise<void>;
-  updateMenuItem: (id: string, formData: FormData) => Promise<void>;
+  addItem: (data: any) => Promise<void>;
+  updateMenuItem: (id: string, data: any) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
   toggleAvailability: (id: string, isAvailable: boolean) => Promise<void>;
   toggleSpecial: (id: string, isSpecial: boolean) => Promise<void>;
@@ -102,23 +102,25 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
         (selectedCategory === "Special" && item.isSpecial) ||
         item.category === selectedCategory;
 
-      const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchSearch = (item.name || "").toLowerCase().includes(searchQuery.toLowerCase());
 
       return matchCategory && matchSearch;
     });
   },
 
-  addItem: async (formData: FormData) => {
-    const newItem = await addMenuItem(formData);
+  addItem: async (data: any) => {
+    const result = await addMenuItem(data);
+    const newItem = result.menuItem;
     // Add category property if needed
-    const itemWithCategory = { ...newItem, category: newItem.category || "Uncategorized" };
+    const itemWithCategory = { ...newItem, category: newItem.category?.name || "Uncategorized" };
     set({ items: [...get().items, itemWithCategory] });
     toast.success("Menu item added successfully!");
   },
 
-  updateMenuItem: async (id: string, formData: FormData) => {
+  updateMenuItem: async (id: string, data: any) => {
     try {
-      const savedItem = await updateMenuItem(id, formData);
+      const result = await updateMenuItem(id, data);
+      const savedItem = result.menuItem;
       set({
         items: get().items.map(i => (i.id === savedItem.id ? { ...savedItem, category: i.category } : i)),
       });

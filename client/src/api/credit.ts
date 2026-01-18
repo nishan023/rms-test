@@ -1,14 +1,15 @@
 import api from "./axios";
 
 // Fetch all customers
-export const fetchCustomers = () => {
-  return api.get("/credit/customers");
+export const fetchCustomers = async () => {
+  const response = await api.get("/admin/credit-accounts");
+  return response.data;
 };
 
 // Add a new customer
-export const addCustomer = async (fullName:string, phoneNumber:string) => {
-  const response = await api.post("/admin/credit-accounts", {fullName, phoneNumber});
-  return response.data
+export const addCustomer = async (fullName: string, phoneNumber: string) => {
+  const response = await api.post("/admin/credit-accounts", { fullName, phoneNumber });
+  return response.data;
 };
 
 // Update a customer
@@ -60,5 +61,19 @@ export const settleDebt = (
   notes?: string
 ) => {
   return api.post(`/credit/customers/${customerId}/settle`, { amount, notes });
+};
+
+// Search credit accounts by phone number
+export const searchCreditAccountByPhone = async (phoneNumber: string) => {
+  const response = await api.get(`/admin/credit/accounts/search`, {
+    params: { query: phoneNumber }
+  });
+  return response.data;
+};
+
+// Create credit account
+export const createCreditAccount = async (fullName: string, phoneNumber: string) => {
+  const response = await api.post("/admin/credit/accounts", { fullName, phoneNumber });
+  return response.data;
 };
 

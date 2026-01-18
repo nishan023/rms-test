@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import type { CreditTransaction, Customer } from '../types/Customer';
 import toast from 'react-hot-toast';
-import { addCustomer } from '../api/credit';
+import { addCustomer, fetchCustomers } from '../api/credit';
 
 interface CreditStore {
   customers: Customer[];
   isLoading: boolean;
   error: string | null;
 
+  fetchCustomers: () => Promise<void>;
   addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'creditHistory' | 'totalCredit'>) => Promise<Customer>;
   updateCustomer: (id: string, updates: Partial<Customer>) => void;
   deleteCustomer: (id: string) => void;
@@ -39,23 +40,44 @@ const DUMMY_CUSTOMERS: Customer[] = [
 ];
 
 export const useCreditStore = create<CreditStore>((set, get) => ({
-  customers: DUMMY_CUSTOMERS,
+  customers: [],
   isLoading: false,
   error: null,
+
+  fetchCustomers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await fetchCustomers();
+      const customers = response.data.map((c: any) => ({
+        id: c.id,
+        name: c.fullName || c.name,
+        phone: c.phoneNumber || c.phone,
+        email: c.email,
+        totalCredit: Number(c.totalDue || c.totalCredit || 0),
+        creditHistory: [],
+        createdAt: c.createdAt ? new Date(c.createdAt) : new Date()
+      }));
+      set({ customers, isLoading: false });
+    } catch (error: any) {
+      console.error('Failed to fetch customers:', error);
+      set({ error: 'Failed to load customers', isLoading: false });
+    }
+  },
 
   addCustomer: async (customerData) => {
     const { name, phone } = customerData;
 
     try {
-      if (!customerData.phone || customerData.phone.length < 10) {
+      if (!phone || phone.length < 10) {
         throw new Error('Invalid phone number');
       }
 
-      const exists = get().customers.find(c => c.phone === customerData.phone);
+      const exists = get().customers.find(c => c.phone === phone);
       if (exists) throw new Error('Customer already exists');
 
-      // Call backend API
-      const apiCustomer = await addCustomer({name, phone})
+      // Call backend API - backend expects fullName and phoneNumber
+      const response = await addCustomer(name, phone);
+      const apiCustomer = response.data;
 
       const newCustomer: Customer = {
         ...apiCustomer,
@@ -122,10 +144,10 @@ export const useCreditStore = create<CreditStore>((set, get) => ({
       customers: state.customers.map(c =>
         c.id === customerId
           ? {
-              ...c,
-              totalCredit: transaction.balance,
-              creditHistory: [...c.creditHistory, transaction]
-            }
+            ...c,
+            totalCredit: transaction.balance,
+            creditHistory: [...c.creditHistory, transaction]
+          }
           : c
       )
     }));

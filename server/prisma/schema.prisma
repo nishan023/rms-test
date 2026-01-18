@@ -124,9 +124,10 @@ model Customer {
 model Order {
   id               String        @id @default(uuid()) @db.Uuid
   tableId          String        @db.Uuid
-  customerId       String?       @db.Uuid
-  customerPhone    String?
-  status           OrderStatus   @default(pending)
+  customerId      String?       @db.Uuid
+  customerName    String?
+  customerPhone   String?
+  status          OrderStatus   @default(pending)
 
   totalAmount      Decimal       @default(0)
   discountAmount   Decimal       @default(0)

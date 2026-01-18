@@ -753,7 +753,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, X, Plus, Minus, Trash2, Check, Clock, ChefHat, Package, ArrowLeft, MapPin } from "lucide-react";
 import { useMenuStore } from "../../store/useMenuStore";
 import { useCustomerOrderStore } from "../../store/useCustomerOrderStore";
-import type { MenuItem } from "../../types/menu";
 import { useCustomerCartStore } from "../../store/useCustomerCartStore";
 
 // Top category images (these are just for display, user picks from all admin categories)
@@ -784,7 +783,7 @@ const CustomerMenuView: React.FC = () => {
   const navigate = useNavigate();
 
   // Import categories and raw items from menu store
-  const { getFilteredItems, fetchAll, categories, items } = useMenuStore();
+  const { fetchAll, categories, items } = useMenuStore();
 
   // Import order store
   const {
@@ -1240,7 +1239,7 @@ const CustomerMenuView: React.FC = () => {
             <div className="bg-orange-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-600 mb-1">Order Number</p>
               <p className="text-3xl font-bold text-orange-600">
-                {currentOrder.orderNumber}
+                {currentOrder.orderNumber || currentOrder.orderId?.slice(0, 8) || "N/A"}
               </p>
               {tableId && (
                 <div className="mt-2 flex items-center justify-center gap-1 text-sm">
@@ -1254,21 +1253,18 @@ const CustomerMenuView: React.FC = () => {
             </div>
             <div className="text-left bg-gray-50 rounded-lg p-4 mb-6">
               <p className="font-semibold mb-2">Order Summary:</p>
-              {/* Use CustomerOrder structure: currentOrder.items = {menuItemId, quantity}[] */}
-              {/* Cannot render item name & price unless you fetch MenuItem or denormalize! For this example, skip the name or implement MenuItem lookup if needed */}
-              {currentOrder.items.map((item: any) => (
+              {currentOrder?.items?.map((item: any) => (
                 <div key={item.menuItemId || item.id} className="flex justify-between text-sm mb-1">
                   <span>
-                    {/* Try to find the full MenuItem for name */}
                     {(() => {
-                      const mi = allItems.find((m) => m.id === (item.menuItemId || item.id));
+                      const mi = items.find((m) => m.id === (item.menuItemId || item.id));
                       return mi ? `${mi.name} x${item.quantity}` : `x${item.quantity}`;
                     })()}
                   </span>
                   <span>
                     {(() => {
-                      const mi = allItems.find((m) => m.id === (item.menuItemId || item.id));
-                      return mi ? `Rs. ${mi.price * item.quantity}` : "";
+                      const mi = items.find((m) => m.id === (item.menuItemId || item.id));
+                      return mi ? `Rs. ${Number(mi.price) * item.quantity}` : "";
                     })()}
                   </span>
                 </div>
@@ -1276,7 +1272,7 @@ const CustomerMenuView: React.FC = () => {
               <div className="border-t mt-2 pt-2 flex justify-between font-bold">
                 <span>Total</span>
                 <span className="text-orange-600">
-                  Rs. {currentOrder.totalAmount}
+                  Rs. {currentOrder?.totalAmount}
                 </span>
               </div>
             </div>
@@ -1348,7 +1344,7 @@ const CustomerMenuView: React.FC = () => {
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <p className="text-2xl font-bold text-gray-900">
-                              {order.orderNumber}
+                              {order.orderNumber || order.orderId?.slice(0, 8) || "N/A"}
                             </p>
                             <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                               <span>
@@ -1424,10 +1420,8 @@ const CustomerMenuView: React.FC = () => {
 
                         <div className="bg-white rounded-lg p-4">
                           <p className="font-semibold mb-2">Items:</p>
-                          {/* Render each item in order.items (menuItemId, quantity) */}
-                          {order.items.map((item: any) => {
-                            // lookup MenuItem for info
-                            const mi = allItems.find(
+                          {order.items?.map((item: any) => {
+                            const mi = items.find(
                               (m) => m.id === (item.menuItemId || item.id)
                             );
                             return (
@@ -1439,7 +1433,7 @@ const CustomerMenuView: React.FC = () => {
                                   {mi ? `${mi.name} x${item.quantity}` : `x${item.quantity}`}
                                 </span>
                                 <span>
-                                  {mi ? `Rs. ${mi.price * item.quantity}` : ""}
+                                  {mi ? `Rs. ${Number(mi.price) * item.quantity}` : ""}
                                 </span>
                               </div>
                             );

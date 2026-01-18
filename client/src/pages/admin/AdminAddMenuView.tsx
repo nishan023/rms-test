@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { Upload, Check } from "lucide-react";
+import React, { useState } from "react";
+import { Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMenuStore } from "../../store/useMenuStore";
 import toast from "react-hot-toast";
@@ -12,17 +12,13 @@ const AdminAddMenuView = () => {
   // ===== STATE =====
   const [name, setName] = useState("");
   const [price, setPrice] = useState<number | "">("");
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [isVeg, setIsVeg] = useState(true);
   const [isSpecial, setIsSpecial] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { addItem, categories, fetchAll } = useMenuStore()
 
@@ -30,14 +26,7 @@ const AdminAddMenuView = () => {
     fetchAll();
   }, []);
 
-  // ===== IMAGE HANDLER =====
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setImageFile(file);
-    setPreview(URL.createObjectURL(file));
-  };
+  // Removed image handlers
 
   // ===== PRICE HANDLER =====
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +51,7 @@ const AdminAddMenuView = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || price === "" || !category || !imageFile) {
+    if (!name || price === "" || !categoryId) {
       alert("Please fill all required fields");
       return;
     }
@@ -80,23 +69,18 @@ const AdminAddMenuView = () => {
     setIsSubmitting(true);
 
     try {
-      // Construct multipart form data for possible file upload
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("price", String(price));
-      formData.append("category", category);
-      formData.append("description", description);
-      formData.append("isVeg", isVeg ? "true" : "false");
-      formData.append("isAvailable", isAvailable ? "true" : "false");
-      formData.append("isSpecial", isSpecial ? "true" : "false");
+      const payload = {
+        name,
+        price,
+        categoryId,
+        isVeg,
+        isAvailable,
+        isSpecial,
+      };
 
-      if (imageFile) formData.append("image", imageFile);
-
-      await addItem(formData)
-
+      await addItem(payload);
       navigate("/admin/menu");
     } catch (error: any) {
-      // You may want to use a toast rather than alert!
       toast.error(error?.message || "Failed to add menu item.");
     } finally {
       setIsSubmitting(false);
@@ -130,42 +114,6 @@ const AdminAddMenuView = () => {
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">
           <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm p-6 lg:p-8">
             <form className="space-y-6" onSubmit={handleSubmit}>
-
-              {/* IMAGE UPLOAD AT TOP */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Upload Image
-                  <RequiredAsterisk />
-                </label>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  disabled={isSubmitting}
-                />
-
-                {preview ? (
-                  <img
-                    src={preview}
-                    onClick={() => {
-                      if (!isSubmitting) fileInputRef.current?.click();
-                    }}
-                    className="w-28 h-28 rounded-lg object-cover border cursor-pointer border-orange-600"
-                  />
-                ) : (
-                  <div
-                    onClick={() => {
-                      if (!isSubmitting) fileInputRef.current?.click();
-                    }}
-                    className="w-28 h-28 flex items-center justify-center border-2 border-orange-600 rounded-lg cursor-pointer hover:bg-orange-50 transition-colors"
-                  >
-                    <Upload className="text-orange-400 w-10 h-10" />
-                  </div>
-                )}
-              </div>
 
               {/* NAME + PRICE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -209,8 +157,8 @@ const AdminAddMenuView = () => {
                   <RequiredAsterisk />
                 </label>
                 <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
                   className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
                   disabled={isSubmitting}
                 >
@@ -221,20 +169,6 @@ const AdminAddMenuView = () => {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              {/* DESCRIPTION */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                  disabled={isSubmitting}
-                />
               </div>
 
               {/* FOOD TYPE - RADIO BUTTONS */}
@@ -269,7 +203,7 @@ const AdminAddMenuView = () => {
                 </div>
               </div>
 
-              {/* IS AVAILABLE - checkbox for "Available" without title or Yes/No */}
+              {/* IS AVAILABLE */}
               <div>
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-2 cursor-pointer select-none">

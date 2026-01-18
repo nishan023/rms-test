@@ -5,7 +5,7 @@ import api from "./axios";
 
 export const createOrder = async (payload: {
   tableCode?: string;
-  customerType: "DINE-IN" | "WALK-IN" | "ONLINE";
+  customerType: "DINE_IN" | "WALK_IN" | "ONLINE";
   items: { menuItemId: string; quantity: number }[];
   customerName?: string;
   mobileNumber?: string;

@@ -1,7 +1,4 @@
-// ============================================
-// FILE: src/pages/customer/OrderTracking.tsx
-// Real-time Order Status Tracking
-// ============================================
+
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';

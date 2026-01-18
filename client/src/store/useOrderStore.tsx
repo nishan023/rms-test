@@ -162,6 +162,7 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
         return () => {
             socket.off('order:new');
             socket.off('order:updated');
+            socket.off('order:paid');
         };
     },
 

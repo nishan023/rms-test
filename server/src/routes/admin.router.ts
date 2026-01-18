@@ -8,6 +8,7 @@ const router = express.Router();
 router.get('/orders/active', protect, adminController.getActiveOrders);
 router.get('/orders/history', protect, adminController.getOrderHistory);
 router.patch('/orders/:orderId/serve', protect, adminController.serveOrder);
+router.patch('/orders/:orderId/preparing', protect, adminController.preparingOrder);
 router.get('/orders/:orderId/bill', protect, adminController.getBill);
 
 // Item management

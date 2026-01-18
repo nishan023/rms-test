@@ -121,6 +121,14 @@ export const serveOrderService = async (orderId: string) => {
     return { message: 'Order marked as served', order };
 };
 
+export const preparingOrderService = async (orderId: string) => {
+    const order = await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'preparing' }
+    });
+    return { message: 'Order is being prepared', order };
+};
+
 export const getBillService = async (orderId: string) => {
     const order = await prisma.order.findUnique({
         where: { id: orderId },

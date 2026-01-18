@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createOrder, getOrders, preparingOrder, serveOrder, getOrderHistory } from '../api/orders';
 import api from '../api/axios';
-import { socket } from '../api/socket';
+import { socket, connectSocket } from '../api/socket';
 import toast from 'react-hot-toast';
 import type { Order, OrderStatus } from '../types/order';
 
@@ -125,6 +125,13 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
     initializeSocket: () => {
         const { fetchOrders, fetchHistory } = get();
 
+        // Connect with token if available
+        const auth = localStorage.getItem("authUser");
+        if (auth) {
+            const { token } = JSON.parse(auth);
+            connectSocket(token);
+        }
+
         // Listen for new orders
         socket.on('order:new', (data) => {
             console.log('New order received via socket:', data);
@@ -138,6 +145,14 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
             if (get().isHistoryMode) fetchHistory();
             else fetchOrders();
             toast('Order Updated', { icon: '📝' });
+        });
+
+        // Listen for payments
+        socket.on('order:paid', (data) => {
+            console.log('Order payment received via socket:', data);
+            fetchOrders();
+            fetchHistory();
+            toast.success('Order Paid Successfully!');
         });
 
         return () => {

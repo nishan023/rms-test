@@ -7,6 +7,13 @@ export const socket = io(SOCKET_URL, {
     autoConnect: true,
 });
 
+export const connectSocket = (token: string) => {
+    if (token) {
+        socket.auth = { token };
+        socket.disconnect().connect();
+    }
+};
+
 socket.on("connect", () => {
     console.log("Connected to socket server:", socket.id);
 });

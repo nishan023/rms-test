@@ -22,7 +22,13 @@ export const generateQRService = async ({ tableCode }: { tableCode: string }) =>
     }
 
     // Format: FRONTEND_URL/menu/tableCode
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    // Remove trailing slash if exists to avoid double slashes when joining
+    if (frontendUrl.endsWith('/')) {
+        frontendUrl = frontendUrl.slice(0, -1);
+    }
+
     const qrData = `${frontendUrl}/menu/${table.tableCode}`;
 
     // Generate QR Code as Base64 (Production Safe)

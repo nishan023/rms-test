@@ -33,15 +33,22 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
     if (!table) {
         if (customerType === 'ONLINE' || customerType === 'WALK_IN') {
             const { v4: uuidv4 } = await import('uuid');
+            // Map DINE_IN (if it somehow got here) or others to correct enum
+            const tableTypeMap: any = {
+                'DINE_IN': 'PHYSICAL',
+                'WALK_IN': 'WALK_IN',
+                'ONLINE': 'ONLINE'
+            };
+
             table = await prisma.table.create({
                 data: {
                     tableCode: targetTableCode,
-                    tableType: customerType as any,
+                    tableType: tableTypeMap[customerType] || 'PHYSICAL',
                     qrToken: uuidv4(),
                 }
             });
         } else {
-            throw new AppError('Table not found', 404);
+            throw new AppError(`Table with code "${targetTableCode}" not found. Please ensure the table is registered in the system.`, 400);
         }
     }
 

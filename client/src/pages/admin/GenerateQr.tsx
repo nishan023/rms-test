@@ -3,7 +3,6 @@ import TableSelector from "../../components/admin/TableSelector";
 import QrDownloadModal from "../../components/admin/QrDownloadModal";
 import FullscreenLoader from "../../components/common/FullscreenLoader";
 import { generateQrApi } from "../../api/admin";
-import { BASE_URL } from "../../api/axios";
 
 const GenerateQr = () => {
   const [qrImage, setQrImage] = useState<string | null>(null);
@@ -18,9 +17,17 @@ const GenerateQr = () => {
       const data = await generateQrApi(tableCode);
 
       setTable(tableCode);
-      setQrImage(`${BASE_URL}${data.table.qrImage}`);
+
+      // The backend returns a Base64 string. 
+      // Ensure it's not treated as a relative path by checking if it starts with "data:image"
+      // If it accidentally got a leading slash in production, we strip it.
+      const rawImage = data.table.qrImage || "";
+      const cleanQrImage = rawImage.startsWith('/') ? rawImage.slice(1) : rawImage;
+
+      setQrImage(cleanQrImage);
       setOpen(true);
-    } catch {
+    } catch (error) {
+      console.error("QR generation failed", error);
       alert("QR generation failed");
     } finally {
       setLoading(false);

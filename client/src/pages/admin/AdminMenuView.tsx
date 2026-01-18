@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, Search, Trash2, ToggleLeft, ToggleRight, Star } from "lucide-react";
 import ToggleSideBar from "../../components/admin/ToggleSideBar";
 import EditMenuItemModal from "../../components/admin/EditMenuItemModal";
+import ConfirmModal from "../../components/common/ConfirmModal";
 import type { MenuItem } from "../../types/menu";
 import { useMenuStore } from "../../store/useMenuStore";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +35,11 @@ const AdminMenuView: React.FC = () => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
 
+  // Custom delete state
+  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
@@ -42,6 +48,23 @@ const AdminMenuView: React.FC = () => {
     setNewCategoryName("");
     setShowCategoryModal(false);
     setIsAddingCategory(false);
+  };
+
+  const handleDeleteClick = (item: MenuItem) => {
+    setItemToDelete(item);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteMenuItem(itemToDelete.id);
+      setShowDeleteConfirm(false);
+      setItemToDelete(null);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -167,15 +190,7 @@ const AdminMenuView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Are you sure you want to delete "${item.name}" from the menu? This action cannot be undone.`
-                      )
-                    ) {
-                      deleteMenuItem(item.id);
-                    }
-                  }}
+                  onClick={() => handleDeleteClick(item)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-semibold"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -198,6 +213,18 @@ const AdminMenuView: React.FC = () => {
         isOpen={!!editItem}
         item={editItem}
         onClose={() => setEditItem(null)}
+      />
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Menu Item?"
+        message={`Are you sure you want to delete "${itemToDelete?.name}"? this action cannot be undone and will remove it from all categories.`}
+        confirmLabel="Delete Item"
+        isLoading={isDeleting}
+        variant="danger"
       />
 
       {/* ADD CATEGORY MODAL */}

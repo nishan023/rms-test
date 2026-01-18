@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createOrder, getOrders, preparingOrder, serveOrder } from '../api/orders';
+import { createOrder, getOrders, preparingOrder, serveOrder, getOrderHistory } from '../api/orders';
 import api from '../api/axios';
 import { socket } from '../api/socket';
 import toast from 'react-hot-toast';
@@ -7,28 +7,37 @@ import type { Order, OrderStatus } from '../types/order';
 
 interface OrderStore {
     orders: Order[];
+    historyOrders: Order[]; // Added historyOrders to keep them separate
     currentOrder: Order | null;
     selectedStatus: string;
+    searchQuery: string;
     isLoading: boolean;
     error: string | null;
+    isHistoryMode: boolean;
 
     fetchOrders: () => Promise<void>;
+    fetchHistory: () => Promise<void>; // New action
     updateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<void>;
     setCurrentOrder: (order: Order | null) => void;
     setSelectedStatus: (status: string) => void;
+    setSearchQuery: (query: string) => void;
     getFilteredOrders: () => Order[];
     getOrderById: (id: string) => Order | null;
     addOrder: (order: any) => Promise<void>;
     updateOrder: (orderId: string, updates: Partial<Order>) => void;
     initializeSocket: () => () => void;
+    setIsHistoryMode: (isHistory: boolean) => void;
 }
 
 export const useOrderStore = create<OrderStore>((set, get) => ({
     orders: [],
+    historyOrders: [],
     currentOrder: null,
     selectedStatus: 'all',
+    searchQuery: '',
     isLoading: false,
     error: null,
+    isHistoryMode: false,
 
     fetchOrders: async () => {
         set({ isLoading: true, error: null });
@@ -52,6 +61,34 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
                 isLoading: false,
                 orders: []
             });
+        }
+    },
+
+    fetchHistory: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const data = await getOrderHistory();
+            const historyWithDefaults = (data.orders || data || []).map((order: any) => ({
+                ...order,
+                id: order.id || order._id || `order-history-${Date.now()}`,
+                status: 'paid',
+                items: order.items || [],
+                totalAmount: Number(order.totalAmount || order.finalAmount || 0),
+                tableNumber: order.table?.tableCode || order.tableNumber || (order.tableCode ? order.tableCode : undefined)
+            }));
+            set({ historyOrders: historyWithDefaults, isLoading: false });
+        } catch (error) {
+            console.error('Error fetching history:', error);
+            set({ error: 'Failed to fetch order history', isLoading: false, historyOrders: [] });
+        }
+    },
+
+    setIsHistoryMode: (isHistory: boolean) => {
+        set({ isHistoryMode: isHistory, selectedStatus: 'all' });
+        if (isHistory) {
+            get().fetchHistory();
+        } else {
+            get().fetchOrders();
         }
     },
 
@@ -86,19 +123,20 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
     },
 
     initializeSocket: () => {
-        const { fetchOrders } = get();
+        const { fetchOrders, fetchHistory } = get();
 
         // Listen for new orders
         socket.on('order:new', (data) => {
             console.log('New order received via socket:', data);
-            fetchOrders(); // Refresh all orders to ensure consistent state
+            if (!get().isHistoryMode) fetchOrders();
             toast('New Order Received!', { icon: '🔔' });
         });
 
         // Listen for order updates
         socket.on('order:updated', (data) => {
             console.log('Order update received via socket:', data);
-            fetchOrders();
+            if (get().isHistoryMode) fetchHistory();
+            else fetchOrders();
             toast('Order Updated', { icon: '📝' });
         });
 
@@ -142,10 +180,42 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
         set({ selectedStatus: status });
     },
 
+    setSearchQuery: (query: string) => {
+        set({ searchQuery: query });
+    },
+
     getFilteredOrders: () => {
-        const { orders, selectedStatus } = get();
-        if (selectedStatus === 'all') return orders;
-        return orders.filter((order) => order.status === selectedStatus);
+        const { orders, historyOrders, selectedStatus, searchQuery, isHistoryMode } = get();
+
+        // Separate History (Paid) from Active Management
+        let baseOrders = isHistoryMode ? historyOrders : orders;
+
+        let filtered = baseOrders;
+
+        // Filter by status tabs
+        if (selectedStatus !== 'all' && !isHistoryMode) {
+            filtered = filtered.filter((order) => order.status === selectedStatus);
+        }
+
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter((order) => {
+                const tableCode = (order.table?.tableCode || order.tableNumber || "").toLowerCase();
+                const customerName = (order.customerName || "").toLowerCase();
+                const customerPhone = (order.customerPhone || "").toLowerCase();
+                const orderNumber = (order.orderNumber || "").toLowerCase();
+
+                return (
+                    tableCode.includes(query) ||
+                    customerName.includes(query) ||
+                    customerPhone.includes(query) ||
+                    orderNumber.includes(query)
+                );
+            });
+        }
+
+        return filtered;
     },
 
     getOrderById: (id: string) => {

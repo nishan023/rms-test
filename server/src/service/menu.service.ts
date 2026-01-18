@@ -60,10 +60,10 @@ export const createMenuItemService = async (data: {
         data: {
             name,
             categoryId,
-            price,
-            isAvailable: isAvailable ?? true,
-            isSpecial: isSpecial ?? false,
-            isVeg: isVeg ?? true,
+            price: Number(price),
+            isAvailable: isAvailable !== undefined ? String(isAvailable) === 'true' : true,
+            isSpecial: isSpecial !== undefined ? String(isSpecial) === 'true' : false,
+            isVeg: isVeg !== undefined ? String(isVeg) === 'true' : true,
         },
         include: {
             category: true,
@@ -114,7 +114,13 @@ export const updateMenuItemService = async (
 
     const updatedItem = await prisma.menuItem.update({
         where: { id },
-        data,
+        data: {
+            ...data,
+            price: data.price !== undefined ? Number(data.price) : undefined,
+            isAvailable: data.isAvailable !== undefined ? String(data.isAvailable) === 'true' : undefined,
+            isSpecial: data.isSpecial !== undefined ? String(data.isSpecial) === 'true' : undefined,
+            isVeg: data.isVeg !== undefined ? String(data.isVeg) === 'true' : undefined,
+        },
         include: {
             category: true,
         },
@@ -159,10 +165,10 @@ export const deleteMenuItemService = async (id: string) => {
 
     // If item has recipes, delete recipes first or prevent deletion
     if (existingItem._count.recipes > 0) {
-         // Optionally, we could delete recipes automatically here, but better to be safe
-         await prisma.itemRecipe.deleteMany({
-             where: { menuItemId: id }
-         });
+        // Optionally, we could delete recipes automatically here, but better to be safe
+        await prisma.itemRecipe.deleteMany({
+            where: { menuItemId: id }
+        });
     }
 
     await prisma.menuItem.delete({

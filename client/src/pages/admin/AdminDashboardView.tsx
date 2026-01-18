@@ -2,6 +2,7 @@
 // ADMIN DASHBOARD VIEW
 // ============================================
 
+import React, { useEffect } from "react";
 import {
   TrendingUp,
   Users,
@@ -11,79 +12,70 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ToggleSideBar from "../../components/admin/ToggleSideBar";
-
-// Dummy orders for demonstration
-const DUMMY_ORDERS = [
-  {
-    id: 1001,
-    tableNumber: "T3",
-    customerName: "Rahul Shah",
-    totalAmount: 1240,
-    status: "completed",
-  },
-  {
-    id: 1002,
-    tableNumber: "C2",
-    customerName: "Sneha Joshi",
-    totalAmount: 685,
-    status: "preparing",
-  },
-  {
-    id: 1003,
-    tableNumber: "O1",
-    customerName: "Kabir Karki",
-    totalAmount: 890,
-    status: "cancelled",
-  },
-  {
-    id: 1004,
-    tableNumber: "T1",
-    customerName: "Asmi Sharma",
-    totalAmount: 1200,
-    status: "completed",
-  },
-  {
-    id: 1005,
-    tableNumber: "C3",
-    customerName: "Bikash Kunwar",
-    totalAmount: 1550,
-    status: "preparing",
-  },
-];
+import { useOrderStore } from "../../store/useOrderStore";
 
 const AdminDashboardView = () => {
   const navigate = useNavigate();
+  const { orders, fetchOrders, initializeSocket } = useOrderStore();
+
+  useEffect(() => {
+    fetchOrders();
+    const cleanup = initializeSocket();
+    return cleanup;
+  }, []);
+
+  // Filter and sort for truly "recent" active orders
+  const recentOrders = [...orders]
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .slice(0, 5);
 
   const stats = [
     {
       label: "Today's Revenue",
-      value: "Rs. 45,650",
+      value: "Rs. " + orders.reduce((acc, o) => acc + (o.status === 'paid' ? o.totalAmount : 0), 0).toLocaleString(),
       icon: Wallet,
       color: "text-green-600",
       bg: "bg-green-100",
     },
     {
-      label: "Orders Today",
-      value: "156",
+      label: "Active Orders",
+      value: orders.length.toString(),
       icon: TrendingUp,
       color: "text-blue-600",
       bg: "bg-blue-100",
     },
     {
-      label: "Active Tables",
-      value: "23",
+      label: "Tables Occupied",
+      value: [...new Set(orders.map(o => o.tableNumber).filter(Boolean))].length.toString(),
       icon: Users,
       color: "text-purple-600",
       bg: "bg-purple-100",
     },
     {
       label: "Menu Items",
-      value: "342",
+      value: "...", // This would need useMenuStore
       icon: Package,
       color: "text-orange-600",
       bg: "bg-orange-100",
     },
-  ];  
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+      case 'served':
+      case 'paid':
+        return "bg-green-100 text-green-800";
+      case 'preparing':
+        return "bg-yellow-100 text-yellow-800";
+      case 'pending':
+        return "bg-blue-100 text-blue-800";
+      case 'cancelled':
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -91,7 +83,7 @@ const AdminDashboardView = () => {
         {/* Header */}
         <header className="bg-white border-b px-4 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <ToggleSideBar/>
+            <ToggleSideBar />
             <h1 className="text-xl lg:text-2xl font-bold">Dashboard</h1>
           </div>
           <div className="flex items-center gap-4">
@@ -145,8 +137,11 @@ const AdminDashboardView = () => {
               >
                 Check Inventory
               </button>
-              <button className="p-4 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all">
-                Generate Report
+              <button
+                onClick={() => navigate("/admin/reports")}
+                className="p-4 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-all"
+              >
+                View Reports
               </button>
             </div>
           </div>
@@ -164,42 +159,42 @@ const AdminDashboardView = () => {
             </div>
 
             <div className="space-y-4">
-              {DUMMY_ORDERS.slice(0, 5).map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <ShoppingBag className="w-6 h-6 text-orange-600" />
+              {recentOrders.length > 0 ? (
+                recentOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <ShoppingBag className="w-6 h-6 text-orange-600" />
+                      </div>
+                      <div>
+                        <div className="font-semibold">
+                          Order #{order.orderNumber || order.id.toString().slice(-4)}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {order.tableNumber ? `Table ${order.tableNumber}` : 'WALK-IN'} • {order.customerName || 'Guest'}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-semibold">
-                        Order #{order.id}
+                    <div className="text-right">
+                      <div className="font-bold text-lg">
+                        Rs. {order.totalAmount}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        Table {order.tableNumber} • {order.customerName}
-                      </div>
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}
+                      >
+                        {order.status.toUpperCase()}
+                      </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold text-lg">
-                      Rs. {order.totalAmount}
-                    </div>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                        order.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : order.status === "preparing"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {order.status.toUpperCase()}
-                    </span>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 font-medium">
+                  No active orders found.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </main>

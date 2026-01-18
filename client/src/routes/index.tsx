@@ -17,10 +17,17 @@ import OrderTracking from '../pages/customer/OrderTracking';
 import AdminAddMenuView from '../pages/admin/AdminAddMenuView';
 import GenerateQr from '../pages/admin/GenerateQr';
 import CustomerDetails from '../pages/admin/CustomerDetails';
+import LandingPage from '../pages/LandingPage';
+import ReportsView from '../pages/admin/ReportsView';
 
 // Admin Pages
 
 export const router = createBrowserRouter([
+  // Landing Page
+  {
+    path: '/',
+    element: <LandingPage />
+  },
   // Customer Routes
   {
     path: '/menu',
@@ -29,14 +36,6 @@ export const router = createBrowserRouter([
   {
     path: '/menu/:tableId',
     element: <CustomerMenuView />
-  },
-  {
-    path: '/order-success/:orderId',
-    element: <OrderSuccess />
-  },
-  {
-    path: '/order-tracking/:orderId',
-    element: <OrderTracking />
   },
   {
     path: '/order-success/:orderId',
@@ -106,14 +105,10 @@ export const router = createBrowserRouter([
         path: 'credit',
         element: <CreditLedger />
       },
-      //   {
-      //     path: 'customers/:id',
-      //     element: <CustomerDetails />
-      //   },
-      //   {
-      //     path: 'reports',
-      //     element: <Reports />
-      //   }
+      {
+        path: 'reports',
+        element: <ReportsView />
+      }
     ]
   },
 

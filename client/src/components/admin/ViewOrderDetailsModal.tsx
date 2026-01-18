@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Printer, Receipt, Search, UserPlus, CheckCircle, XCircle } from 'lucide-react';
+import { X, Printer, Receipt, Search, CheckCircle, XCircle, UserPlus } from 'lucide-react';
 import { payCash, payOnline, payMixed, payCredit } from '../../api/payment';
 import { searchCreditAccountByPhone, createCreditAccount } from '../../api/credit';
 import type { Order, PaymentMethod, DiscountType } from '../../types/order';
@@ -14,20 +14,18 @@ interface ViewOrderDetailsModalProps {
 const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModalProps) => {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
     const [discountType, setDiscountType] = useState<DiscountType>('PERCENT');
-    const [discountValue, setDiscountValue] = useState<number>(0);
+    const [discountValue, setDiscountValue] = useState<number | ''>(0);
     const [finalAmount, setFinalAmount] = useState<number>(0);
     const [isSaving, setIsSaving] = useState(false);
 
     // Credit payment states
     const [customerPhone, setCustomerPhone] = useState('');
-    const [customerName, setCustomerName] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [customerFound, setCustomerFound] = useState<boolean | null>(null);
     const [foundCustomer, setFoundCustomer] = useState<any>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [newCustomerName, setNewCustomerName] = useState('');
 
-    // Normalize values when order changes
     useEffect(() => {
         if (order) {
             const baseAmount = Number(order.totalAmount ?? order.finalAmount ?? 0);
@@ -35,138 +33,86 @@ const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModal
             setPaymentMethod(order.paymentMethod ?? 'CASH');
             setDiscountType(order.discountType ?? 'PERCENT');
             setDiscountValue(Number(order.discountValue ?? 0));
-
-            // Pre-fill customer phone if available
-            if (order.customerPhone) {
-                setCustomerPhone(order.customerPhone);
-            }
+            if (order.customerPhone) setCustomerPhone(order.customerPhone);
         }
     }, [order]);
 
-    // Recalculate final amount whenever discount changes
     useEffect(() => {
         if (!order) return;
-
         const baseAmount = Number(order.totalAmount ?? order.finalAmount ?? 0);
         let calculated = baseAmount;
-
-        if (discountValue > 0) {
-            if (discountType === 'PERCENT') {
-                calculated = baseAmount - (baseAmount * discountValue) / 100;
-            } else {
-                calculated = baseAmount - discountValue;
-            }
+        const value = typeof discountValue === 'number' ? discountValue : 0;
+        if (value > 0) {
+            if (discountType === 'PERCENT') calculated = baseAmount - (baseAmount * value) / 100;
+            else calculated = baseAmount - value;
         }
-
         setFinalAmount(Math.max(0, calculated));
     }, [discountValue, discountType, order]);
 
-    // Reset credit states when payment method changes
-    useEffect(() => {
-        if (paymentMethod !== 'CREDIT') {
-            setCustomerFound(null);
-            setFoundCustomer(null);
-            setShowCreateForm(false);
-        }
-    }, [paymentMethod]);
+    const baseAmount = order ? Number(order.totalAmount ?? order.finalAmount ?? 0) : 0;
+    const currentDiscountValue = typeof discountValue === 'number' ? discountValue : 0;
+    const discountAmount = discountType === 'PERCENT' ? (baseAmount * currentDiscountValue) / 100 : currentDiscountValue;
 
     const handleSearchCustomer = async () => {
         if (!customerPhone || customerPhone.length < 10) {
-            toast.error('Please enter a valid phone number');
+            toast.error('Enter a valid phone number');
             return;
         }
-
         setIsSearching(true);
         setCustomerFound(null);
-        setFoundCustomer(null);
-
         try {
             const response = await searchCreditAccountByPhone(customerPhone);
-
-            if (response.data && response.data.length > 0) {
-                const customer = response.data[0];
-                setFoundCustomer(customer);
+            if (response.data?.length > 0) {
+                setFoundCustomer(response.data[0]);
                 setCustomerFound(true);
-                setCustomerName(customer.fullName || customer.name);
-                toast.success(`Customer found: ${customer.fullName || customer.name}`);
+                toast.success('Customer found');
             } else {
                 setCustomerFound(false);
-                toast.error('Credit account not found');
             }
-        } catch (error: any) {
-            console.error('Search error:', error);
+        } catch (error) {
             setCustomerFound(false);
-            toast.error('Credit account not found');
         } finally {
             setIsSearching(false);
         }
     };
 
     const handleCreateAccount = async () => {
-        if (!newCustomerName || !customerPhone) {
-            toast.error('Please enter both name and phone number');
-            return;
-        }
-
+        if (!newCustomerName || !customerPhone) return toast.error('Name/Phone required');
         try {
             const response = await createCreditAccount(newCustomerName, customerPhone);
-            toast.success('Credit account created successfully!');
             setFoundCustomer(response.data);
             setCustomerFound(true);
-            setCustomerName(newCustomerName);
             setShowCreateForm(false);
+            toast.success('Account created');
         } catch (error: any) {
-            console.error('Create account error:', error);
-            toast.error(error?.response?.data?.message || 'Failed to create credit account');
+            toast.error(error?.response?.data?.message || 'Failed to create account');
         }
     };
 
     const handleSavePayment = async () => {
         if (!order || isSaving) return;
-
-        // Validate credit payment
-        if (paymentMethod === 'CREDIT') {
-            if (!customerFound || !customerPhone) {
-                toast.error('Please search and verify customer before proceeding with credit payment');
-                return;
-            }
-        }
+        if (paymentMethod === 'CREDIT' && !customerFound) return toast.error('Verify customer for credit');
 
         setIsSaving(true);
         try {
+            const val = typeof discountValue === 'number' ? discountValue : 0;
             const payload = {
                 orderId: order.id,
-                discount: discountValue > 0 ? {
-                    type: discountType,
-                    value: discountValue
-                } : undefined,
+                discount: val > 0 ? { type: discountType, value: val } : undefined,
                 cashAmount: paymentMethod === 'CASH' || paymentMethod === 'MIXED' ? finalAmount : undefined,
                 onlineAmount: paymentMethod === 'ONLINE' || paymentMethod === 'MIXED' ? finalAmount : undefined,
                 customerPhone: paymentMethod === 'CREDIT' ? customerPhone : undefined,
             };
 
-            switch (paymentMethod) {
-                case 'CASH':
-                    await payCash(payload);
-                    break;
-                case 'ONLINE':
-                    await payOnline(payload);
-                    break;
-                case 'MIXED':
-                    await payMixed({ ...payload, cashAmount: finalAmount / 2, onlineAmount: finalAmount / 2 });
-                    break;
-                case 'CREDIT':
-                    await payCredit(payload);
-                    break;
-                default:
-                    throw new Error('Invalid payment method');
-            }
+            if (paymentMethod === 'CASH') await payCash(payload);
+            else if (paymentMethod === 'ONLINE') await payOnline(payload);
+            else if (paymentMethod === 'MIXED') await payMixed({ ...payload, cashAmount: finalAmount / 2, onlineAmount: finalAmount / 2 });
+            else if (paymentMethod === 'CREDIT') await payCredit(payload);
 
-            toast.success('Payment details saved successfully!');
+            toast.success('Payment saved');
             onClose();
         } catch (error: any) {
-            console.error(error);
-            toast.error(error?.response?.data?.message || 'Failed to save payment details');
+            toast.error(error?.response?.data?.message || 'Error saving payment');
         } finally {
             setIsSaving(false);
         }
@@ -174,299 +120,157 @@ const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModal
 
     const handlePrint = () => {
         if (!order) return;
-
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
-
-        const baseAmount = Number(order.totalAmount ?? order.finalAmount ?? 0);
-        const discountAmount = discountType === 'PERCENT'
-            ? (baseAmount * discountValue) / 100
-            : discountValue;
-
         const orderTitle = order.orderNumber || order.id.slice(0, 8);
         const tableLabel = order.table?.tableCode || order.tableNumber;
 
         printWindow.document.write(`
-            <!DOCTYPE html>
             <html>
-            <head>
-                <title>Order #${orderTitle}</title>
-                <style>
-                    body { font-family: Arial; padding: 20px; max-width: 800px; margin: 0 auto; }
-                    .header { text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px; }
-                    table { width:100%; border-collapse:collapse; margin:10px 0; }
-                    th, td { padding:8px; text-align:left; border-bottom:1px solid #ddd; }
-                    th { background-color:#f5f5f5; font-weight:bold; }
-                    .totals { margin-top:20px; text-align:right; }
-                    .totals div { margin:5px 0; }
-                    .final-total { font-size:1.2em; font-weight:bold; border-top:2px solid #000; padding-top:10px; margin-top:10px; }
-                    .payment-info { background-color:#f9f9f9; padding:15px; border-radius:5px; margin-top:20px; }
-                    .footer { text-align:center; margin-top:30px; padding-top:20px; border-top:2px solid #000; }
-                    @media print { body { padding:0; } }
-                </style>
-            </head>
+            <head><title>Receipt #${orderTitle}</title><style>
+                body { font-family: sans-serif; padding: 20px; font-size: 14px; }
+                .text-center { text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+                .total { text-align: right; margin-top: 10px; font-weight: bold; }
+            </style></head>
             <body>
-                <div class="header">
-                    <h1>Restaurant Name</h1>
-                    <p>Order Receipt</p>
-                </div>
-                <div><strong>Order Number:</strong> ${orderTitle}<br>
-                ${tableLabel ? `<strong>Table:</strong> ${tableLabel}<br>` : ''}
-                ${order.customerName ? `<strong>Customer Name:</strong> ${order.customerName}<br>` : ''}
-                <strong>Date:</strong> ${order.createdAt ? new Date(order.createdAt).toLocaleString() : new Date().toLocaleString()}<br>
-                <strong>Status:</strong> ${order.status.toUpperCase()}</div>
-                <h3>Items</h3>
-                <table>
-                    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
-                    <tbody>
-                        ${order.items.map(item => `
-                            <tr>
-                                <td>${item.menuItem.name}</td>
-                                <td>${item.quantity}</td>
-                                <td>Rs. ${Number(item.menuItem.price).toFixed(2)}</td>
-                                <td>Rs. ${(Number(item.menuItem.price) * Number(item.quantity)).toFixed(2)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                <div class="totals">
-                    <div><strong>Subtotal:</strong> Rs. ${baseAmount.toFixed(2)}</div>
-                    ${discountValue > 0 ? `<div><strong>Discount:</strong> ${discountType === 'PERCENT' ? `${discountValue}%` : `Rs. ${discountValue}`} (-Rs. ${discountAmount.toFixed(2)})</div>` : ''}
-                    <div class="final-total"><strong>Final Amount:</strong> Rs. ${finalAmount.toFixed(2)}</div>
-                </div>
-                <div class="payment-info">
-                    <h3>Payment Info</h3>
-                    <strong>Method:</strong> ${paymentMethod.toUpperCase()}<br>
-                    ${paymentMethod === 'CREDIT' ? '<p style="color:#d9534f;font-weight:bold;">⚠ To be added to credit ledger</p>' : ''}
-                </div>
-                <div class="footer">
-                    <p>Thank you for your order!</p>
-                    <p style="font-size:0.9em;color:#666;">Computer-generated receipt</p>
-                </div>
-                <script>window.onload=function(){window.print();}</script>
-            </body>
-            </html>
+                <h2 class="text-center">Order Receipt</h2>
+                <p>Order ID: #${orderTitle} | Table: ${tableLabel || 'N/A'}</p>
+                <table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>
+                    ${order.items.map(i => `<tr><td>${i.menuItem.name}</td><td>${i.quantity}</td><td>${Number(i.menuItem.price).toFixed(2)}</td><td>${(Number(i.menuItem.price) * i.quantity).toFixed(2)}</td></tr>`).join('')}
+                </tbody></table>
+                <div class="total">Subtotal: Rs. ${baseAmount.toFixed(2)}<br>
+                ${currentDiscountValue > 0 ? `Discount: -Rs. ${discountAmount.toFixed(2)}<br>` : ''}
+                Final Total: Rs. ${finalAmount.toFixed(2)}</div>
+                <p class="text-center" style="margin-top: 20px;">Thank you!</p>
+                <script>window.print(); setTimeout(() => window.close(), 500);</script>
+            </body></html>
         `);
         printWindow.document.close();
     };
 
     if (!isOpen || !order) return null;
 
-    const baseAmount = Number(order.totalAmount ?? order.finalAmount ?? 0);
-    const discountAmount = discountType === 'PERCENT'
-        ? (baseAmount * discountValue) / 100
-        : discountValue;
-
-    const modalTitle = order.orderNumber || order.id.slice(0, 8);
-    const tableLabel = order.table?.tableCode || order.tableNumber;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">Order #{modalTitle} {tableLabel ? `(${tableLabel})` : ''}</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                        <X className="w-6 h-6" />
-                    </button>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] flex flex-col overflow-hidden">
+                <div className="px-4 py-3 border-b flex items-center justify-between">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-800">Order #{order.orderNumber || order.id.slice(0, 8)}</h2>
+                        <p className="text-xs text-gray-500">{order.table?.tableCode || order.tableNumber || 'N/A'}</p>
+                    </div>
+                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 space-y-6">
-                    {/* Order Info */}
-                    <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
-                        {tableLabel && <div><p className="text-sm text-gray-600">Table</p><p className="font-semibold">{tableLabel}</p></div>}
-                        {order.customerName && <div><p className="text-sm text-gray-600">Customer</p><p className="font-semibold">{order.customerName}</p></div>}
-                        <div><p className="text-sm text-gray-600">Status</p>
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${order.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                order.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
-                                    order.status === 'cancelled' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'
-                                }`}>{order.status.toUpperCase()}</span>
-                        </div>
-                        {order.createdAt && <div><p className="text-sm text-gray-600">Time</p>
-                            <p className="font-semibold">{new Date(order.createdAt).toLocaleString()}</p>
-                        </div>}
-                    </div>
-
+                <div className="p-4 overflow-y-auto space-y-4">
                     {/* Items Table */}
-                    <div>
-                        <h3 className="text-lg font-bold mb-3">Order Items</h3>
-                        <table className="w-full border rounded-lg overflow-hidden">
+                    <div className="border rounded overflow-hidden">
+                        <table className="w-full text-sm">
                             <thead className="bg-gray-50">
-                                <tr><th className="px-4 py-3 text-left">Item</th><th className="px-4 py-3 text-center">Qty</th><th className="px-4 py-3 text-right">Price</th><th className="px-4 py-3 text-right">Subtotal</th></tr>
+                                <tr>
+                                    <th className="px-3 py-2 text-left">Item</th>
+                                    <th className="px-3 py-2 text-center">Qty</th>
+                                    <th className="px-3 py-2 text-right">Price</th>
+                                    <th className="px-3 py-2 text-right">Total</th>
+                                </tr>
                             </thead>
                             <tbody className="divide-y">
                                 {order.items.map(item => (
                                     <tr key={item.id}>
-                                        <td className="px-4 py-3">{item?.menuItem?.name}</td>
-                                        <td className="px-4 py-3 text-center">{item.quantity}</td>
-                                        <td className="px-4 py-3 text-right">Rs. {Number(item?.menuItem?.price).toFixed(2)}</td>
-                                        <td className="px-4 py-3 text-right font-semibold">
-                                            Rs. {(Number(item?.menuItem?.price) * Number(item.quantity)).toFixed(2)}
-                                        </td>
+                                        <td className="px-3 py-2 font-medium">{item.menuItem.name}</td>
+                                        <td className="px-3 py-2 text-center">{item.quantity}</td>
+                                        <td className="px-3 py-2 text-right">{(Number(item.menuItem.price)).toFixed(2)}</td>
+                                        <td className="px-3 py-2 text-right font-semibold">{(Number(item.menuItem.price) * item.quantity).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Payment & Discount */}
-                    <div className="border-t pt-6 space-y-4">
-                        <h3 className="text-lg font-bold">Payment Details</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                            {(['CASH', 'ONLINE', 'MIXED', 'CREDIT'] as const).map(method => (
-                                <button key={method} onClick={() => setPaymentMethod(method)}
-                                    className={`p-3 rounded-lg border-2 font-semibold transition-all ${paymentMethod === method ? 'border-orange-600 bg-orange-50 text-orange-600' : 'border-gray-200 hover:border-gray-300'
-                                        }`}>
-                                    <Receipt className="w-5 h-5 mx-auto mb-1" />{method.charAt(0).toUpperCase() + method.slice(1).toLowerCase()}
-                                </button>
-                            ))}
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                            <h3 className="text-sm font-bold text-gray-700">Payment Option</h3>
+                            <div className="grid grid-cols-2 gap-2">
+                                {(['CASH', 'ONLINE', 'MIXED', 'CREDIT'] as const).map(m => (
+                                    <button
+                                        key={m}
+                                        onClick={() => setPaymentMethod(m)}
+                                        className={`py-2 px-3 rounded border text-xs font-bold transition-all flex items-center gap-2 justify-center
+                                            ${paymentMethod === m ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white text-gray-600 border-gray-200'}`}
+                                    >
+                                        <Receipt className="w-3 h-3" /> {m}
+                                    </button>
+                                ))}
+                            </div>
 
-                        {/* Credit Payment Section */}
-                        {paymentMethod === 'CREDIT' && (
-                            <div className="bg-orange-50 border-2 border-orange-200 p-4 rounded-lg space-y-3">
-                                <div className="flex items-center gap-2 text-orange-800 font-semibold">
-                                    <Receipt className="w-5 h-5" />
-                                    <span>Credit Payment - Customer Verification Required</span>
-                                </div>
-
-                                {/* Phone Search */}
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-semibold text-gray-700">Customer Phone Number</label>
-                                    <div className="flex gap-2">
+                            {paymentMethod === 'CREDIT' && (
+                                <div className="p-3 border rounded-lg bg-gray-50 space-y-2">
+                                    <div className="flex gap-1">
                                         <input
                                             type="tel"
                                             value={customerPhone}
                                             onChange={(e) => setCustomerPhone(e.target.value)}
-                                            placeholder="Enter phone number"
-                                            className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600 focus:border-transparent"
+                                            placeholder="Phone No"
+                                            className="flex-1 px-2 py-1.5 border rounded text-sm"
                                             maxLength={10}
                                         />
-                                        <button
-                                            onClick={handleSearchCustomer}
-                                            disabled={isSearching || customerPhone.length < 10}
-                                            className="px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                        >
-                                            <Search className="w-4 h-4" />
-                                            {isSearching ? 'Searching...' : 'Search'}
-                                        </button>
+                                        <button onClick={handleSearchCustomer} disabled={isSearching} className="bg-gray-800 text-white px-2 rounded"><Search className="w-4 h-4" /></button>
                                     </div>
+                                    {customerFound === true && <div className="text-xs font-bold text-green-600">✓ {foundCustomer.fullName || foundCustomer.name}</div>}
+                                    {customerFound === false && !showCreateForm && <button onClick={() => setShowCreateForm(true)} className="text-[10px] text-blue-600 font-bold underline">Add New Customer</button>}
+                                    {showCreateForm && (
+                                        <div className="space-y-1">
+                                            <input type="text" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Name" className="w-full px-2 py-1 border rounded text-sm" />
+                                            <div className="flex gap-1"><button onClick={handleCreateAccount} className="bg-blue-600 text-white px-2 py-1 rounded text-[10px] flex-1">Create</button><button onClick={() => setShowCreateForm(false)} className="px-2 py-1 rounded text-[10px] border border-gray-300">Cancel</button></div>
+                                        </div>
+                                    )}
                                 </div>
+                            )}
 
-                                {/* Search Result */}
-                                {customerFound === true && foundCustomer && (
-                                    <div className="bg-green-50 border-2 border-green-200 p-3 rounded-lg flex items-start gap-3">
-                                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                                        <div className="flex-1">
-                                            <p className="font-semibold text-green-800">Customer Found!</p>
-                                            <p className="text-sm text-green-700">Name: {foundCustomer.fullName || foundCustomer.name}</p>
-                                            <p className="text-sm text-green-700">Phone: {customerPhone}</p>
-                                            {foundCustomer.totalDue && (
-                                                <p className="text-sm text-green-700">Current Due: Rs. {Number(foundCustomer.totalDue).toFixed(2)}</p>
-                                            )}
-                                        </div>
+                            {paymentMethod !== 'CREDIT' && (
+                                <div className="space-y-2">
+                                    <div className="flex gap-1 text-[10px] font-bold">
+                                        <button onClick={() => setDiscountType('PERCENT')} className={`px-2 py-0.5 rounded ${discountType === 'PERCENT' ? 'bg-gray-800 text-white' : 'bg-gray-200'}`}>%</button>
+                                        <button onClick={() => setDiscountType('FIXED')} className={`px-2 py-0.5 rounded ${discountType === 'FIXED' ? 'bg-gray-800 text-white' : 'bg-gray-200'}`}>Rs</button>
                                     </div>
-                                )}
+                                    <input
+                                        type="number"
+                                        value={discountValue === 0 ? '' : discountValue}
+                                        onChange={e => setDiscountValue(e.target.value === '' ? '' : Number(e.target.value))}
+                                        placeholder="Discount"
+                                        className="w-full px-2 py-1.5 border rounded text-sm"
+                                    />
+                                </div>
+                            )}
+                        </div>
 
-                                {customerFound === false && !showCreateForm && (
-                                    <div className="bg-red-50 border-2 border-red-200 p-3 rounded-lg space-y-3">
-                                        <div className="flex items-start gap-3">
-                                            <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                                            <div className="flex-1">
-                                                <p className="font-semibold text-red-800">Credit Account Not Found</p>
-                                                <p className="text-sm text-red-700">No credit account exists for this phone number.</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowCreateForm(true)}
-                                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2"
-                                        >
-                                            <UserPlus className="w-4 h-4" />
-                                            Create New Credit Account
-                                        </button>
-                                    </div>
+                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col justify-between">
+                            <div className="space-y-1 text-xs">
+                                <div className="flex justify-between text-gray-500"><span>Subtotal:</span><span>Rs. {baseAmount.toFixed(2)}</span></div>
+                                {currentDiscountValue > 0 && paymentMethod !== 'CREDIT' && (
+                                    <div className="flex justify-between text-green-600"><span>Discount:</span><span>-Rs. {discountAmount.toFixed(2)}</span></div>
                                 )}
-
-                                {/* Create Account Form */}
-                                {showCreateForm && (
-                                    <div className="bg-blue-50 border-2 border-blue-200 p-4 rounded-lg space-y-3">
-                                        <h4 className="font-semibold text-blue-800">Create New Credit Account</h4>
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-semibold text-gray-700">Full Name</label>
-                                            <input
-                                                type="text"
-                                                value={newCustomerName}
-                                                onChange={(e) => setNewCustomerName(e.target.value)}
-                                                placeholder="Enter customer name"
-                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-semibold text-gray-700">Phone Number</label>
-                                            <input
-                                                type="tel"
-                                                value={customerPhone}
-                                                disabled
-                                                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-100"
-                                            />
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={handleCreateAccount}
-                                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700"
-                                            >
-                                                Create Account
-                                            </button>
-                                            <button
-                                                onClick={() => setShowCreateForm(false)}
-                                                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <p className="text-sm text-orange-700 font-semibold">⚠ Amount will be added to customer's credit ledger</p>
                             </div>
-                        )}
-
-                        {/* Discount */}
-                        {paymentMethod !== 'CREDIT' && (
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                                <label className="block text-sm font-semibold mb-2">Discount</label>
-                                <div className="grid grid-cols-2 gap-3 mb-3">
-                                    <button onClick={() => setDiscountType('PERCENT')} className={`p-2 rounded-lg border-2 font-semibold ${discountType === 'PERCENT' ? 'border-orange-600 bg-orange-50 text-orange-600' : 'border-gray-200 hover:border-gray-300'}`}>Percentage (%)</button>
-                                    <button onClick={() => setDiscountType('FIXED')} className={`p-2 rounded-lg border-2 font-semibold ${discountType === 'FIXED' ? 'border-orange-600 bg-orange-50 text-orange-600' : 'border-gray-200 hover:border-gray-300'}`}>Amount (Rs.)</button>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <input type="number" min="0" max={discountType === 'PERCENT' ? 100 : baseAmount} value={discountValue} onChange={e => setDiscountValue(Number(e.target.value))} className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-600" />
-                                    <span>{discountType === 'PERCENT' ? '%' : 'Rs.'}</span>
-                                </div>
-                                {discountValue > 0 && <p className="mt-2 text-sm text-green-600 font-semibold">Discount Applied: -Rs. {discountAmount.toFixed(2)}</p>}
+                            <div className="pt-2 border-t mt-2 flex justify-between items-center">
+                                <span className="text-sm font-bold text-gray-700">Total:</span>
+                                <span className="text-xl font-black text-orange-600">Rs. {finalAmount.toFixed(2)}</span>
                             </div>
-                        )}
-
-                        {/* Amount Summary */}
-                        <div className="bg-gray-100 p-4 rounded-lg space-y-2">
-                            <div className="flex justify-between text-gray-700"><span>Subtotal:</span><span>Rs. {baseAmount.toFixed(2)}</span></div>
-                            {discountValue > 0 && paymentMethod !== 'CREDIT' && <div className="flex justify-between text-green-600"><span>Discount:</span><span>-Rs. {discountAmount.toFixed(2)}</span></div>}
-                            <div className="flex justify-between text-xl font-bold border-t-2 pt-2"><span>Final Amount:</span><span className="text-orange-600">Rs. {finalAmount.toFixed(2)}</span></div>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex gap-3">
+                <div className="p-3 border-t bg-gray-50 flex gap-2">
                     <button
                         onClick={handleSavePayment}
                         disabled={isSaving || (paymentMethod === 'CREDIT' && !customerFound)}
-                        className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-green-600 text-white py-2 rounded font-bold text-xs uppercase hover:bg-green-700 disabled:opacity-50"
                     >
-                        {isSaving ? 'Saving...' : 'Save Payment Details'}
+                        {isSaving ? 'Saving...' : 'Save Payment'}
                     </button>
-                    <button onClick={handlePrint} className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-semibold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"><Printer className="w-5 h-5" />Print Receipt</button>
+                    <button onClick={handlePrint} className="bg-orange-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-orange-700 flex items-center gap-2">
+                        <Printer className="w-4 h-4" /> Print
+                    </button>
                 </div>
             </div>
         </div>

@@ -1,33 +1,39 @@
 
 import { useEffect } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Search, History, ListFilter, CheckCircle } from "lucide-react";
 import OrdersExportPrint from "../../components/admin/OrdersExportPrint";
 import ToggleSideBar from "../../components/admin/ToggleSideBar";
 import ViewOrderDetailsModal from "../../components/admin/ViewOrderDetailsModal";
 import { useOrderStore } from "../../store/useOrderStore";
-import type { Order } from "../../types/order";
 
 const AdminOrdersView = () => {
     const {
         fetchOrders,
+        fetchHistory,
         getFilteredOrders,
         selectedStatus,
         setSelectedStatus,
+        searchQuery,
+        setSearchQuery,
         setCurrentOrder,
         currentOrder,
         updateOrderStatus,
         initializeSocket,
         isLoading,
         error,
+        isHistoryMode,
+        setIsHistoryMode,
     } = useOrderStore();
 
     const orders = getFilteredOrders();
 
     useEffect(() => {
-        fetchOrders();
+        if (isHistoryMode) fetchHistory();
+        else fetchOrders();
+
         const cleanup = initializeSocket();
         return () => cleanup && cleanup();
-    }, [fetchOrders, initializeSocket]);
+    }, [fetchOrders, fetchHistory, initializeSocket, isHistoryMode]);
 
 
     return (
@@ -35,41 +41,79 @@ const AdminOrdersView = () => {
             <header className="bg-white border-b px-4 lg:px-8 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <ToggleSideBar />
-                    <h1 className="text-xl lg:text-2xl font-bold">Orders Management</h1>
+                    <h1 className="text-xl lg:text-2xl font-bold">
+                        {isHistoryMode ? 'Order History' : 'Orders Management'}
+                    </h1>
                 </div>
-                <button
-                    onClick={() => fetchOrders()}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Refresh orders"
-                >
-                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline">{isLoading ? 'Loading...' : 'Refresh'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsHistoryMode(!isHistoryMode)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all shadow-sm ${isHistoryMode
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                            }`}
+                    >
+                        {isHistoryMode ? <ListFilter className="w-4 h-4" /> : <History className="w-4 h-4" />}
+                        <span className="hidden sm:inline">{isHistoryMode ? 'Active Orders' : 'Order History'}</span>
+                    </button>
+                    <button
+                        onClick={() => isHistoryMode ? fetchHistory() : fetchOrders()}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        title="Refresh orders"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">{isLoading ? 'Loading...' : 'Refresh'}</span>
+                    </button>
+                </div>
             </header>
 
             <main className="flex-1 overflow-y-auto p-4 lg:p-8">
                 {/* Error Message */}
                 {error && (
-                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-red-800 font-semibold">Error: {error}</p>
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg animate-in fade-in duration-300">
+                        <p className="text-red-800 font-semibold text-sm">Error: {error}</p>
                     </div>
                 )}
 
-                {/* Filter Tabs */}
-                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                    {['all', 'pending', 'preparing', 'served', 'cancelled'].map((status) => (
-                        <button
-                            key={status}
-                            onClick={() => setSelectedStatus(status)}
-                            className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${selectedStatus === status
-                                ? 'bg-orange-600 text-white'
-                                : 'bg-white text-gray-700 hover:bg-gray-100'
-                                }`}
-                        >
-                            {status?.charAt(0).toUpperCase() + status.slice(1)}
-                        </button>
-                    ))}
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    {/* Filter Tabs - Only show for Active Orders */}
+                    {!isHistoryMode && (
+                        <div className="flex gap-2 overflow-x-auto pb-2 flex-1 scrollbar-hide">
+                            {['all', 'pending', 'preparing', 'served', 'cancelled'].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setSelectedStatus(status)}
+                                    className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all text-sm ${selectedStatus === status
+                                        ? 'bg-orange-600 text-white shadow-md'
+                                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-transparent'
+                                        }`}
+                                >
+                                    {status?.charAt(0).toUpperCase() + status.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {isHistoryMode && (
+                        <div className="flex-1 flex items-center">
+                            <span className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" /> Showing Paid Orders
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Search Bar */}
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder={`Search ${isHistoryMode ? 'history' : 'active orders'}...`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-sm shadow-sm"
+                        />
+                    </div>
                 </div>
 
                 {/* Export / Print Buttons */}
@@ -90,17 +134,13 @@ const AdminOrdersView = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                         {orders && orders.length > 0 ? (
                             orders.map((order) => {
-                                // Safe fallback for order ID display
-                                const tableInfo = order.table?.tableCode || order.tableNumber;
-                                const displayId = order.orderNumber
-                                    ? `Order #${order.orderNumber}`
-                                    : order.id
-                                        ? `Order #${order.id.slice(0, 8)}`
-                                        : 'Order #N/A';
+                                const tableCode = order.table?.tableCode || order.tableNumber || "";
+                                const isWalkIn = tableCode.startsWith("WALKIN");
 
-                                const headerText = tableInfo
-                                    ? `[${tableInfo}] ${displayId}`
-                                    : displayId;
+                                // Header: Use customer name for walk-in, table code for others
+                                const headerText = isWalkIn
+                                    ? (order.customerName || "Walk-in")
+                                    : tableCode;
 
                                 return (
                                     <div
@@ -110,7 +150,7 @@ const AdminOrdersView = () => {
                                         <div className="flex items-start justify-between mb-4">
                                             <div>
                                                 <h3 className="font-bold text-lg">{headerText}</h3>
-                                                {order.customerName && (
+                                                {!isWalkIn && order.customerName && (
                                                     <p className="text-sm text-gray-600">{order.customerName}</p>
                                                 )}
                                             </div>

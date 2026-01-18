@@ -3,8 +3,8 @@ import type { MenuItem } from "../types/menu";
 import {
   fetchMenuItems,
   addMenuItem,
-  updateMenuItem,
-  deleteMenuItem,
+  updateMenuItem as updateMenuItemApi,
+  deleteMenuItem as deleteMenuItemApi,
   updateMenuItemAvailability as toggleAvailabilityApi,
   toggleSpecial as toggleSpecialApi,
   addCategory as addCategoryApi,
@@ -119,10 +119,12 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
 
   updateMenuItem: async (id: string, data: any) => {
     try {
-      const result = await updateMenuItem(id, data);
+      const result = await updateMenuItemApi(id, data);
       const savedItem = result.menuItem;
       set({
-        items: get().items.map(i => (i.id === savedItem.id ? { ...savedItem, category: i.category } : i)),
+        items: get().items.map(i =>
+          i.id === savedItem.id ? { ...savedItem, category: savedItem.category?.name || "Uncategorized" } : i
+        ),
       });
       toast.success("Menu item updated successfully!");
     } catch (error) {
@@ -132,7 +134,7 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
   },
 
   deleteMenuItem: async (id: string) => {
-    await deleteMenuItem(id);
+    await deleteMenuItemApi(id);
     set({ items: get().items.filter(i => i.id !== id) });
     toast.success("Menu item deleted successfully!");
   },

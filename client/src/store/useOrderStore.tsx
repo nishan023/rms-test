@@ -3,6 +3,7 @@ import { createOrder, getOrders, preparingOrder, serveOrder, getOrderHistory } f
 import api from '../api/axios';
 import { socket, connectSocket } from '../api/socket';
 import toast from 'react-hot-toast';
+import { Bell, RefreshCcw, CheckCircle, ClipboardCheck, XCircle } from 'lucide-react';
 import type { Order, OrderStatus } from '../types/order';
 
 interface OrderStore {
@@ -115,7 +116,9 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
             set((state) => ({
                 orders: [mappedOrder, ...state.orders]
             }));
-            toast.success("Order placed successfully!");
+            toast.success("Order placed successfully!", {
+                icon: <CheckCircle className="w-5 h-5 text-green-500" />
+            });
         } catch (error: any) {
             toast.error(error?.message || "Failed to place order.");
             throw error;
@@ -136,7 +139,10 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
         socket.on('order:new', (data) => {
             console.log('New order received via socket:', data);
             if (!get().isHistoryMode) fetchOrders();
-            toast('New Order Received!', { icon: '🔔' });
+            toast.success('New Order Received!', {
+                icon: <Bell className="w-5 h-5 text-orange-500" />,
+                duration: 5000
+            });
         });
 
         // Listen for order updates
@@ -144,7 +150,9 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
             console.log('Order update received via socket:', data);
             if (get().isHistoryMode) fetchHistory();
             else fetchOrders();
-            toast('Order Updated', { icon: '📝' });
+            toast('Order Updated', {
+                icon: <RefreshCcw className="w-5 h-5 text-blue-500 animate-spin-slow" />
+            });
         });
 
         // Listen for payments
@@ -152,7 +160,9 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
             console.log('Order payment received via socket:', data);
             fetchOrders();
             fetchHistory();
-            toast.success('Order Paid Successfully!');
+            toast.success('Order Paid Successfully!', {
+                icon: <CheckCircle className="w-5 h-5 text-green-500" />
+            });
         });
 
         return () => {
@@ -178,12 +188,16 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
                 ),
             }));
 
-            toast.success(`Order marked as ${newStatus}`);
+            toast.success(`Order marked as ${newStatus}`, {
+                icon: <ClipboardCheck className="w-5 h-5 text-green-500" />
+            });
         } catch (error) {
             console.error('Error updating order status:', error);
             const msg = error instanceof Error ? error.message : 'Failed to update order';
             set({ error: msg });
-            toast.error(msg);
+            toast.error(msg, {
+                icon: <XCircle className="w-5 h-5 text-red-500" />
+            });
         }
     },
 

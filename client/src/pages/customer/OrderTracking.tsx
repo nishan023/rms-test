@@ -38,29 +38,7 @@ export const OrderTracking: React.FC = () => {
       setOrder(dummyOrder);
     }
 
-    // Listen for order updates via socket
-    // Handled in actual socket logic if present
-    // const handleOrderUpdate = (data: any) => {
-    //   if (data.orderId === orderId) {
-    //     const updatedOrder = getOrderById(orderId!);
-    //     setOrder(updatedOrder || dummyOrder);
-    //     // Add notification
-    //     const message = `Order status updated to: ${data.status}`;
-    //     setNotifications(prev => [...prev, message]);
-    //     // Show browser notification if permission granted
-    //     if (Notification.permission === 'granted') {
-    //       new Notification('Order Update', { body: message });
-    //     }
-    //   }
-    // };
-
-    // on('order:update', handleOrderUpdate);
-    // on('order:served', handleOrderUpdate);
-
-    // return () => {
-    //   off('order:update');
-    //   off('order:served');
-    // };
+ 
   }, [orderId, getOrderById]);
 
   if (!order) {

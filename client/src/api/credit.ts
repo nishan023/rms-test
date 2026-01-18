@@ -6,7 +6,7 @@ export const fetchCustomers = async () => {
   return response.data;
 };
 
-// Add a new customer
+
 export const addCustomer = async (fullName: string, phoneNumber: string) => {
   const response = await api.post("/admin/credit-accounts", { fullName, phoneNumber });
   return response.data;
@@ -19,7 +19,6 @@ export const updateCustomer = (
     name: string;
     phone: string;
     email: string;
-    creditLimit: number;
   }>
 ) => {
   return api.put(`/credit/customers/${customerId}`, updates);

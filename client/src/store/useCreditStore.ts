@@ -33,7 +33,6 @@ const DUMMY_CUSTOMERS: Customer[] = [
     phone: '9841234567',
     email: 'ram@example.com',
     totalCredit: 5000,
-    creditLimit: 10000,
     creditHistory: [],
     createdAt: new Date()
   }

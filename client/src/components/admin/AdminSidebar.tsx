@@ -1,12 +1,12 @@
-// ============================================
-// ADMIN SIDEBAR
+
 
 import React from "react";
 import { BarChart3, Home, LogOut, Package, ShoppingBag, User, Utensils, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {useAuthStore} from '../../store/useAuthStore' // Correct import for store usage
 
-// ============================================
+
+
 const menuItems = [
   { path: '/admin/dashboard', icon: Home, label: 'Dashboard' },
   { path: '/admin/menu', icon: Utensils, label: 'Menu' },
@@ -17,6 +17,7 @@ const menuItems = [
   { path: '/admin/credit', icon: Package, label: 'Credit' },
   { path: '/admin/reports', icon: BarChart3, label: 'Reports' },
 ];
+
 
 interface AdminSidebarProps {
   sidebarOpen?: boolean;

@@ -69,11 +69,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ order, onClose, onSu
           throw new Error('Please select a customer');
         }
         
-        const availableCredit = selectedCustomer.creditLimit - selectedCustomer.totalCredit;
-        if (finalAmount > availableCredit) {
-          throw new Error(`Insufficient credit limit. Available: Rs. ${availableCredit}`);
-        }
-
         // Add debt to customer account
         await addCreditTransaction(selectedCustomer.id, {
           customerId: selectedCustomer.id,
@@ -94,9 +89,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ order, onClose, onSu
 
       // Update order
       await updateOrder(order.id, {
-        paymentMethod: activeTab,
+        paymentMethod: activeTab.toUpperCase() as any, // Cast to any to avoid strict type issues if types mismatch slightly
         paymentStatus: 'paid',
-        status: 'completed',
+        status: 'paid', // Changed from 'completed' to 'paid' to match OrderStatus type
         discount: discountValue > 0 ? {
           type: discountType,
           value: discountValue,
@@ -336,16 +331,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ order, onClose, onSu
                         Rs. {(selectedCustomer.totalCredit + finalAmount).toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-600">Available Credit After:</span>
-                      <span className={`font-semibold ${
-                        (selectedCustomer.creditLimit - selectedCustomer.totalCredit - finalAmount) < 0 
-                          ? 'text-red-600' 
-                          : 'text-green-600'
-                      }`}>
-                        Rs. {(selectedCustomer.creditLimit - selectedCustomer.totalCredit - finalAmount).toLocaleString()}
-                      </span>
-                    </div>
+{/* Available Credit Removed */}
                   </div>
                 </div>
               )}

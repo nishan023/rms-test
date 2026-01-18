@@ -51,7 +51,6 @@ export const serveOrder = async (orderId: string) => {
   return response.data;
 };
 
-// Get bill details for an order
 export const getOrderBill = async (orderId: string) => {
   const response = await api.get(`/admin/orders/${orderId}/bill`);
   return response.data.order;

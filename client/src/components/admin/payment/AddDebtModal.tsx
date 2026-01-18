@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DollarSign, FileText, AlertCircle } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Customer } from '../../../types/Customer';
 import { useCreditStore } from '../../../store/useCreditStore';
@@ -19,20 +19,13 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ customer, isOpen, on
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const availableCredit = customer.creditLimit - customer.totalCredit;
   const newTotal = customer.totalCredit + amount;
-  const exceedsLimit = newTotal > customer.creditLimit;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (amount <= 0) {
       toast.error('Amount must be greater than zero');
-      return;
-    }
-
-    if (exceedsLimit) {
-      toast.error('Amount exceeds customer credit limit');
       return;
     }
 
@@ -73,15 +66,9 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ customer, isOpen, on
         <div className="bg-gray-50 rounded-xl p-4">
           <p className="text-sm text-gray-600 mb-1">Customer</p>
           <p className="text-xl font-bold text-gray-900">{customer.name}</p>
-          <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-600">Current Outstanding:</p>
-              <p className="font-bold text-red-600">Rs. {customer.totalCredit.toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Available Credit:</p>
-              <p className="font-bold text-green-600">Rs. {availableCredit.toLocaleString()}</p>
-            </div>
+          <div className="mt-2 text-sm">
+            <p className="text-gray-600">Current Outstanding:</p>
+            <p className="font-bold text-red-600">Rs. {customer.totalCredit.toLocaleString()}</p>
           </div>
         </div>
 
@@ -93,7 +80,6 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ customer, isOpen, on
           onChange={(e) => setAmount(Number(e.target.value))}
           placeholder="Enter amount"
           icon={<DollarSign className="w-5 h-5" />}
-          // Removing unsupported props 'min' and 'max'
           required
         />
 
@@ -113,18 +99,11 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ customer, isOpen, on
 
         {/* Preview */}
         {amount > 0 && (
-          <div className={`rounded-xl p-4 border-2 ${
-            exceedsLimit 
-              ? 'bg-red-50 border-red-200' 
-              : 'bg-blue-50 border-blue-200'
-          }`}>
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
             <div className="flex items-start gap-2 mb-3">
-              <AlertCircle className={`w-5 h-5 mt-0.5 ${
-                exceedsLimit ? 'text-red-600' : 'text-blue-600'
-              }`} />
               <div className="flex-1">
                 <p className="font-semibold text-gray-800 mb-2">
-                  {exceedsLimit ? 'Credit Limit Exceeded!' : 'Transaction Preview'}
+                  Transaction Preview
                 </p>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
@@ -133,24 +112,10 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ customer, isOpen, on
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">New Outstanding:</span>
-                    <span className={`font-bold ${exceedsLimit ? 'text-red-600' : 'text-gray-900'}`}>
+                    <span className="font-bold text-gray-900">
                       Rs. {newTotal.toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Credit Limit:</span>
-                    <span className="font-bold text-gray-900">
-                      Rs. {customer.creditLimit.toLocaleString()}
-                    </span>
-                  </div>
-                  {!exceedsLimit && (
-                    <div className="flex justify-between pt-2 border-t">
-                      <span className="text-gray-600">Remaining Credit:</span>
-                      <span className="font-bold text-green-600">
-                        Rs. {(customer.creditLimit - newTotal).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -172,7 +137,7 @@ export const AddDebtModal: React.FC<AddDebtModalProps> = ({ customer, isOpen, on
             type="submit"
             fullWidth
             loading={isSubmitting}
-            disabled={isSubmitting || amount <= 0 || exceedsLimit}
+            disabled={isSubmitting || amount <= 0}
           >
             {isSubmitting ? 'Adding Debt...' : `Add Rs. ${amount.toLocaleString()}`}
           </Button>

@@ -61,21 +61,10 @@ const CustomerDetails: React.FC = () => {
         <Card className="border-l-4 border-red-500">
           <p className="text-sm text-gray-600 mb-1">Total Outstanding</p>
           <p className="text-3xl font-bold text-red-600">
-            Rs. {customer.totalCredit.toLocaleString()}
+            Rs. {(customer.totalCredit || 0).toLocaleString()}
           </p>
         </Card>
-        <Card className="border-l-4 border-blue-500">
-          <p className="text-sm text-gray-600 mb-1">Credit Limit</p>
-          <p className="text-3xl font-bold text-blue-600">
-            Rs. {customer.creditLimit.toLocaleString()}
-          </p>
-        </Card>
-        <Card className="border-l-4 border-green-500">
-          <p className="text-sm text-gray-600 mb-1">Available Credit</p>
-          <p className="text-3xl font-bold text-green-600">
-            Rs. {(customer.creditLimit - customer.totalCredit).toLocaleString()}
-          </p>
-        </Card>
+{/* Credit Limit and Available Credit cards removed */}
       </div>
 
       {/* Transaction History */}

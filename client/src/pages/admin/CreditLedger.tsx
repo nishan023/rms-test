@@ -70,7 +70,7 @@ const CreditLedger: React.FC = () => {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card className="border-l-4 border-red-500">
           <div className="flex items-center gap-3">
             <div className="bg-red-100 p-3 rounded-lg">
@@ -91,20 +91,6 @@ const CreditLedger: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Customers</p>
               <p className="text-2xl font-bold text-blue-600">{customers.length}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border-l-4 border-yellow-500">
-          <div className="flex items-center gap-3">
-            <div className="bg-yellow-100 p-3 rounded-lg">
-              <AlertCircle className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">With Debt</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {customers.filter(c => c.totalCredit > 0).length}
-              </p>
             </div>
           </div>
         </Card>
@@ -154,38 +140,12 @@ const CreditLedger: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {customer.creditLimit && customer.totalCredit >= customer.creditLimit * 0.8 && (
-                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">
-                    Near Limit
-                  </span>
-                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="mb-4">
                 <div className="bg-red-50 rounded-lg p-3">
                   <p className="text-xs text-gray-600 mb-1">Outstanding</p>
                   <p className="text-xl font-bold text-red-600">Rs. {(customer.totalCredit || 0).toLocaleString()}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs text-gray-600 mb-1">Credit Limit</p>
-                  <p className="text-xl font-bold text-gray-800">Rs. {(customer.creditLimit || 0).toLocaleString()}</p>
-                </div>
-              </div>
-
-              {/* Credit Usage Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Available: Rs. {((customer.creditLimit || 0) - (customer.totalCredit || 0)).toLocaleString()}</span>
-                  <span>{(customer.creditLimit ? ((customer.totalCredit || 0) / customer.creditLimit * 100).toFixed(0) : 0)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all ${(customer.totalCredit || 0) >= (customer.creditLimit || 1) * 0.8 ? 'bg-red-500' :
-                      (customer.totalCredit || 0) >= (customer.creditLimit || 1) * 0.5 ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}
-                    style={{ width: `${customer.creditLimit ? Math.min(((customer.totalCredit || 0) / customer.creditLimit) * 100, 100) : 0}%` }}
-                  />
                 </div>
               </div>
 

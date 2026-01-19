@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, Printer, Receipt, Search, CheckCircle, XCircle, UserPlus } from 'lucide-react';
+import { X, Printer, Receipt, Search, CheckCircle, XCircle, UserPlus, Minus, Plus, Trash2 } from 'lucide-react';
 import { payCash, payOnline, payMixed, payCredit } from '../../api/payment';
 import { searchCreditAccountByPhone, createCreditAccount } from '../../api/credit';
 import type { Order, PaymentMethod, DiscountType } from '../../types/order';
+import { useOrderStore } from '../../store/useOrderStore';
 import toast from 'react-hot-toast';
 
 interface ViewOrderDetailsModalProps {
@@ -12,6 +13,7 @@ interface ViewOrderDetailsModalProps {
 }
 
 const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModalProps) => {
+    const { cancelOrder, updateOrderItem } = useOrderStore();
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
     const [discountType, setDiscountType] = useState<DiscountType>('PERCENT');
     const [discountValue, setDiscountValue] = useState<number | ''>(0);
@@ -52,6 +54,10 @@ const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModal
     const baseAmount = order ? Number(order.totalAmount ?? order.finalAmount ?? 0) : 0;
     const currentDiscountValue = typeof discountValue === 'number' ? discountValue : 0;
     const discountAmount = discountType === 'PERCENT' ? (baseAmount * currentDiscountValue) / 100 : currentDiscountValue;
+    const isCancelled = order?.status === 'cancelled';
+    const isServed = order?.status === 'served';
+    const isPaid = order?.status === 'paid';
+    const canModify = !isCancelled && !isPaid && !isServed;
 
     const handleSearchCustomer = async () => {
         if (!customerPhone || customerPhone.length < 10) {
@@ -118,6 +124,17 @@ const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModal
         }
     };
 
+    const handleCancelOrder = async () => {
+        if (!order || !confirm('Are you sure you want to cancel this order?')) return;
+        await cancelOrder(order.id);
+        onClose();
+    };
+
+    const handleUpdateQuantity = async (itemId: string, action: 'increment' | 'decrement') => {
+        if (!order) return;
+        await updateOrderItem(order.id, itemId, action);
+    };
+
     const handlePrint = () => {
         if (!order) return;
         const printWindow = window.open('', '_blank');
@@ -154,123 +171,215 @@ const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModal
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] flex flex-col overflow-hidden">
-                <div className="px-4 py-3 border-b flex items-center justify-between">
+            <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+                {/* Header */}
+                <div className="px-6 py-4 border-b flex items-center justify-between bg-white">
                     <div>
-                        <h2 className="text-lg font-bold text-gray-800">Order #{order.orderNumber || order.id.slice(0, 8)}</h2>
-                        <p className="text-xs text-gray-500">{order.table?.tableCode || order.tableNumber || 'N/A'}</p>
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-xl font-bold text-gray-900">Order #{order.orderNumber || order.id.slice(0, 8)}</h2>
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase
+                                ${order.status === 'served' ? 'bg-green-100 text-green-700' :
+                                    order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                        'bg-orange-100 text-orange-700'}`}>
+                                {order.status}
+                            </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-0.5">{order.table?.tableCode || order.tableNumber || 'N/A'} • {order.items.length} Items</p>
                     </div>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
+                    <div className="flex items-center gap-2">
+                        {!isCancelled && !isPaid && (
+                            <button
+                                onClick={handleCancelOrder}
+                                className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 flex items-center gap-1 transition-colors"
+                            >
+                                <XCircle className="w-4 h-4" /> Cancel Order
+                            </button>
+                        )}
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
+                    </div>
                 </div>
 
-                <div className="p-4 overflow-y-auto space-y-4">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50">
                     {/* Items Table */}
-                    <div className="border rounded overflow-hidden">
+                    <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
                         <table className="w-full text-sm">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-gray-50 text-gray-500 font-medium border-b">
                                 <tr>
-                                    <th className="px-3 py-2 text-left">Item</th>
-                                    <th className="px-3 py-2 text-center">Qty</th>
-                                    <th className="px-3 py-2 text-right">Price</th>
-                                    <th className="px-3 py-2 text-right">Total</th>
+                                    <th className="px-4 py-3 text-left w-[40%]">Item Details</th>
+                                    <th className="px-4 py-3 text-center">Qty</th>
+                                    <th className="px-4 py-3 text-right">Price</th>
+                                    <th className="px-4 py-3 text-right">Total</th>
+                                    {canModify && <th className="px-4 py-3 text-center w-24">Actions</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-gray-100">
                                 {order.items.map(item => (
-                                    <tr key={item.id}>
-                                        <td className="px-3 py-2 font-medium">{item.menuItem.name}</td>
-                                        <td className="px-3 py-2 text-center">{item.quantity}</td>
-                                        <td className="px-3 py-2 text-right">{(Number(item.menuItem.price)).toFixed(2)}</td>
-                                        <td className="px-3 py-2 text-right font-semibold">{(Number(item.menuItem.price) * item.quantity).toFixed(2)}</td>
+                                    <tr key={item.id} className="group hover:bg-gray-50/50">
+                                        <td className="px-4 py-3">
+                                            <p className="font-semibold text-gray-900">{item.menuItem.name}</p>
+                                            <p className="text-xs text-gray-500">Rs. {Number(item.menuItem.price).toFixed(2)} each</p>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className="inline-block px-2 py-1 bg-gray-100 rounded text-xs font-bold text-gray-700">
+                                                {item.quantity}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-gray-600">{Number(item.menuItem.price).toFixed(2)}</td>
+                                        <td className="px-4 py-3 text-right font-bold text-gray-900">{(Number(item.menuItem.price) * item.quantity).toFixed(2)}</td>
+                                        {canModify && (
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex items-center justify-center gap-1">
+                                                    <button
+                                                        onClick={() => handleUpdateQuantity(item.menuItemId, 'decrement')}
+                                                        className="w-7 h-7 flex items-center justify-center rounded border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+                                                    >
+                                                        {item.quantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleUpdateQuantity(item.menuItemId, 'increment')}
+                                                        className="w-7 h-7 flex items-center justify-center rounded border border-green-200 text-green-600 hover:bg-green-50 transition-colors"
+                                                    >
+                                                        <Plus className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                            <h3 className="text-sm font-bold text-gray-700">Payment Option</h3>
-                            <div className="grid grid-cols-2 gap-2">
+                    {/* Payment & Summary Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Left: Payment Method */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                <Receipt className="w-4 h-4 text-orange-600" /> Payment Method
+                            </h3>
+
+                            <div className="grid grid-cols-2 gap-3">
                                 {(['CASH', 'ONLINE', 'MIXED', 'CREDIT'] as const).map(m => (
                                     <button
                                         key={m}
                                         onClick={() => setPaymentMethod(m)}
-                                        className={`py-2 px-3 rounded border text-xs font-bold transition-all flex items-center gap-2 justify-center
-                                            ${paymentMethod === m ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white text-gray-600 border-gray-200'}`}
+                                        className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all flex items-center justify-center gap-2
+                                            ${paymentMethod === m
+                                                ? 'bg-gray-900 border-gray-900 text-white shadow-md'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            }`}
                                     >
-                                        <Receipt className="w-3 h-3" /> {m}
+                                        {m}
                                     </button>
                                 ))}
                             </div>
 
+                            {/* Credit Customer Search */}
                             {paymentMethod === 'CREDIT' && (
-                                <div className="p-3 border rounded-lg bg-gray-50 space-y-2">
-                                    <div className="flex gap-1">
+                                <div className="p-4 border rounded-xl bg-white shadow-sm space-y-3">
+                                    <div className="flex gap-2">
                                         <input
                                             type="tel"
                                             value={customerPhone}
                                             onChange={(e) => setCustomerPhone(e.target.value)}
-                                            placeholder="Phone No"
-                                            className="flex-1 px-2 py-1.5 border rounded text-sm"
+                                            placeholder="Enter Customer Phone"
+                                            className="flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
                                             maxLength={10}
                                         />
-                                        <button onClick={handleSearchCustomer} disabled={isSearching} className="bg-gray-800 text-white px-2 rounded"><Search className="w-4 h-4" /></button>
+                                        <button onClick={handleSearchCustomer} disabled={isSearching} className="bg-gray-900 text-white px-3 rounded-lg hover:bg-gray-800 transition-colors">
+                                            <Search className="w-4 h-4" />
+                                        </button>
                                     </div>
-                                    {customerFound === true && <div className="text-xs font-bold text-green-600">✓ {foundCustomer.fullName || foundCustomer.name}</div>}
-                                    {customerFound === false && !showCreateForm && <button onClick={() => setShowCreateForm(true)} className="text-[10px] text-blue-600 font-bold underline">Add New Customer</button>}
+                                    {customerFound === true && (
+                                        <div className="flex items-center gap-2 text-sm font-medium text-green-700 bg-green-50 p-2 rounded-lg border border-green-100">
+                                            <CheckCircle className="w-4 h-4" /> {foundCustomer.fullName || foundCustomer.name}
+                                        </div>
+                                    )}
+                                    {customerFound === false && !showCreateForm && (
+                                        <button onClick={() => setShowCreateForm(true)} className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1">
+                                            <UserPlus className="w-3 h-3" /> Add New Customer
+                                        </button>
+                                    )}
                                     {showCreateForm && (
-                                        <div className="space-y-1">
-                                            <input type="text" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Name" className="w-full px-2 py-1 border rounded text-sm" />
-                                            <div className="flex gap-1"><button onClick={handleCreateAccount} className="bg-blue-600 text-white px-2 py-1 rounded text-[10px] flex-1">Create</button><button onClick={() => setShowCreateForm(false)} className="px-2 py-1 rounded text-[10px] border border-gray-300">Cancel</button></div>
+                                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                            <input type="text" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Customer Name" className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:border-blue-500" />
+                                            <div className="flex gap-2">
+                                                <button onClick={handleCreateAccount} className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex-1 hover:bg-blue-700">Create Account</button>
+                                                <button onClick={() => setShowCreateForm(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium border hover:bg-gray-50">Cancel</button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             )}
 
+                            {/* Discount Input */}
                             {paymentMethod !== 'CREDIT' && (
-                                <div className="space-y-2">
-                                    <div className="flex gap-1 text-[10px] font-bold">
-                                        <button onClick={() => setDiscountType('PERCENT')} className={`px-2 py-0.5 rounded ${discountType === 'PERCENT' ? 'bg-gray-800 text-white' : 'bg-gray-200'}`}>%</button>
-                                        <button onClick={() => setDiscountType('FIXED')} className={`px-2 py-0.5 rounded ${discountType === 'FIXED' ? 'bg-gray-800 text-white' : 'bg-gray-200'}`}>Rs</button>
+                                <div className="p-4 border rounded-xl bg-white shadow-sm space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-bold text-gray-700">Apply Discount</label>
+                                        <div className="flex border rounded-lg overflow-hidden p-0.5 bg-gray-100">
+                                            <button onClick={() => setDiscountType('PERCENT')} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${discountType === 'PERCENT' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>%</button>
+                                            <button onClick={() => setDiscountType('FIXED')} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${discountType === 'FIXED' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500'}`}>Rs</button>
+                                        </div>
                                     </div>
-                                    <input
-                                        type="number"
-                                        value={discountValue === 0 ? '' : discountValue}
-                                        onChange={e => setDiscountValue(e.target.value === '' ? '' : Number(e.target.value))}
-                                        placeholder="Discount"
-                                        className="w-full px-2 py-1.5 border rounded text-sm"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={discountValue === 0 ? '' : discountValue}
+                                            onChange={e => setDiscountValue(e.target.value === '' ? '' : Number(e.target.value))}
+                                            placeholder="Enter discount value"
+                                            className="w-full pl-3 pr-16 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-gray-200"
+                                        />
+                                        {discountAmount > 0 && (
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-green-600">
+                                                -Rs. {discountAmount.toFixed(2)}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 flex flex-col justify-between">
-                            <div className="space-y-1 text-xs">
-                                <div className="flex justify-between text-gray-500"><span>Subtotal:</span><span>Rs. {baseAmount.toFixed(2)}</span></div>
-                                {currentDiscountValue > 0 && paymentMethod !== 'CREDIT' && (
-                                    <div className="flex justify-between text-green-600"><span>Discount:</span><span>-Rs. {discountAmount.toFixed(2)}</span></div>
-                                )}
+                        {/* Right: Bill Summary */}
+                        <div className="flex flex-col gap-4">
+                            <div className="bg-orange-50/50 p-5 rounded-xl border border-orange-100 flex flex-col justify-between h-full">
+                                <h3 className="text-sm font-bold text-orange-800 mb-4 flex items-center gap-2">
+                                    Bill Summary
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>Subtotal</span>
+                                        <span className="font-medium">Rs. {baseAmount.toFixed(2)}</span>
+                                    </div>
+                                    {paymentMethod !== 'CREDIT' && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                            <span>Discount</span>
+                                            <span className="font-medium">- Rs. {discountAmount.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="pt-3 border-t border-orange-200 flex justify-between items-center mt-2">
+                                        <span className="text-sm font-bold text-orange-900">TOTAL PAYABLE</span>
+                                        <span className="text-2xl font-black text-gray-900">Rs. {finalAmount.toFixed(2)}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="pt-2 border-t mt-2 flex justify-between items-center">
-                                <span className="text-sm font-bold text-gray-700">Total:</span>
-                                <span className="text-xl font-black text-orange-600">Rs. {finalAmount.toFixed(2)}</span>
-                            </div>
+
+                            <button
+                                onClick={handleSavePayment}
+                                disabled={isSaving || (paymentMethod === 'CREDIT' && !customerFound) || order.status === 'paid'}
+                                className="w-full bg-green-600 text-white py-3.5 rounded-xl font-bold text-sm uppercase hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all flex items-center justify-center gap-2"
+                            >
+                                {isSaving ? 'Processing...' : order.status === 'paid' ? 'Order Paid' : 'Receive Payment >'}
+                            </button>
+
+                            <button
+                                onClick={handlePrint}
+                                className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-bold text-sm uppercase hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Printer className="w-4 h-4" /> Print Receipt
+                            </button>
                         </div>
                     </div>
-                </div>
-
-                <div className="p-3 border-t bg-gray-50 flex gap-2">
-                    <button
-                        onClick={handleSavePayment}
-                        disabled={isSaving || (paymentMethod === 'CREDIT' && !customerFound)}
-                        className="flex-1 bg-green-600 text-white py-2 rounded font-bold text-xs uppercase hover:bg-green-700 disabled:opacity-50"
-                    >
-                        {isSaving ? 'Saving...' : 'Save Payment'}
-                    </button>
-                    <button onClick={handlePrint} className="bg-orange-600 text-white px-4 py-2 rounded font-bold text-xs uppercase hover:bg-orange-700 flex items-center gap-2">
-                        <Printer className="w-4 h-4" /> Print
-                    </button>
                 </div>
             </div>
         </div>

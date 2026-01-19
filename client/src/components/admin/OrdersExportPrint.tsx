@@ -9,12 +9,13 @@ const OrdersExportPrint: React.FC<Props> = ({ orders }) => {
 
   // Export CSV
   const handleExportCSV = () => {
-    const headers = ["Order ID", "Table", "Customer", "Status", "Total Amount"];
+    const headers = ["Order ID", "Table", "Customer", "Status", "Payment Method", "Total Amount"];
     const rows = orders.map(o => [
       o.id,
       o.tableNumber,
       o.customerName,
       o.status,
+      o.paymentMethod || '-',
       o.totalAmount,
     ]);
 
@@ -55,6 +56,7 @@ const OrdersExportPrint: React.FC<Props> = ({ orders }) => {
                 <th>Table</th>
                 <th>Customer</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Total Amount</th>
               </tr>
             </thead>
@@ -64,7 +66,8 @@ const OrdersExportPrint: React.FC<Props> = ({ orders }) => {
                   <td>${o.id}</td>
                   <td>${o.tableNumber}</td>
                   <td>${o.customerName}</td>
-                  <td>${o.status}</td>
+                  <td>${o.status.toUpperCase()}</td>
+                  <td>${o.paymentMethod || '-'}</td>
                   <td>${o.totalAmount}</td>
                 </tr>`).join("")}
             </tbody>

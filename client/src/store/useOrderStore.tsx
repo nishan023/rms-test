@@ -17,8 +17,10 @@ interface OrderStore {
     isHistoryMode: boolean;
 
     fetchOrders: () => Promise<void>;
-    fetchHistory: () => Promise<void>; // New action
+    fetchHistory: () => Promise<void>;
     updateOrderStatus: (orderId: string, newStatus: OrderStatus) => Promise<void>;
+    cancelOrder: (orderId: string) => Promise<void>;
+    updateOrderItem: (orderId: string, menuItemId: string, action: 'increment' | 'decrement') => Promise<void>;
     setCurrentOrder: (order: Order | null) => void;
     setSelectedStatus: (status: string) => void;
     setSearchQuery: (query: string) => void;
@@ -193,6 +195,45 @@ export const useOrderStore = create<OrderStore>((set, get) => ({
             toast.error(msg, {
                 icon: <XCircle className="w-5 h-5 text-red-500" />
             });
+        }
+    },
+
+    cancelOrder: async (orderId: string) => {
+        try {
+            await api.patch(`/orders/${orderId}/cancel`);
+            set(state => ({
+                orders: state.orders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o)
+            }));
+            toast.success('Order cancelled successfully');
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to cancel order');
+        }
+    },
+
+    updateOrderItem: async (orderId: string, menuItemId: string, action: 'increment' | 'decrement') => {
+        try {
+            const response = await api.patch(`/orders/${orderId}/items/${menuItemId}`, { action });
+
+            // Check if response contains the updated order and update local state
+            if (response.data && response.data.order) {
+                const updatedOrder = response.data.order;
+
+                set((state) => ({
+                    orders: state.orders.map((order) =>
+                        order.id === orderId ? { ...order, ...updatedOrder } : order
+                    ),
+                    // Also update currentOrder if it's the same one being viewed
+                    currentOrder: state.currentOrder?.id === orderId
+                        ? { ...state.currentOrder, ...updatedOrder }
+                        : state.currentOrder
+                }));
+            } else {
+                // Fallback if no order returned
+                get().fetchOrders();
+            }
+
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to update item quantity');
         }
     },
 

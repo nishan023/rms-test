@@ -91,7 +91,9 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
             data: {
                 customerName: customerName ?? order.customerName,
                 customerPhone: mobileNumber ?? order.customerPhone,
-                customerId: customerId ?? order.customerId
+                customerId: customerId ?? order.customerId,
+                // Reset status to pending if it was served, so admin sees "Start Preparing" again for new items
+                status: order.status === 'served' ? 'pending' : order.status
             }
         });
     }
@@ -236,4 +238,91 @@ export const getOrderService = async (id: string) => {
     if (!order) throw new AppError('Order not found', 404);
 
     return { order };
+};
+
+export const cancelOrderService = async (orderId: string) => {
+    const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true }
+    });
+
+    if (!order) throw new AppError('Order not found', 404);
+    if (order.status === 'cancelled') throw new AppError('Order is already cancelled', 400);
+
+    // Restore inventory
+    try {
+        await import('./inventory.service.js').then(s => s.restoreStockForOrderService(order.id, order.items));
+    } catch (err) {
+        console.error("Failed to restore inventory:", err);
+    }
+
+    const cancelledOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'cancelled' },
+        include: { items: true }
+    });
+
+    // Emit socket event
+    try {
+        const { getIO } = await import('../socket.ts');
+        const io = getIO();
+        io.emit('order:updated', { ...cancelledOrder, items: cancelledOrder.items });
+    } catch (err) { console.error("Socket emit failed:", err); }
+
+    return { message: 'Order cancelled successfully', order: cancelledOrder };
+};
+
+export const updateOrderItemQuantityService = async (orderId: string, menuItemId: string, action: 'increment' | 'decrement') => {
+    const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+    if (!order) throw new AppError('Order not found', 404);
+    if (order.status === 'cancelled' || order.status === 'served' || order.status === 'paid') {
+        throw new AppError('Cannot modify items for this order status', 400);
+    }
+
+    const item = order.items.find(i => i.menuItemId === menuItemId);
+    if (!item) throw new AppError('Item not found in order', 404);
+
+    if (action === 'decrement' && item.quantity <= 1) {
+        // Remove item if qty becomes 0
+        await prisma.orderItem.delete({ where: { id: item.id } });
+
+        // Restore stock for 1 unit
+        try {
+            await import('./inventory.service.js').then(s => s.restoreStockForOrderService(orderId, [{ menuItemId, quantity: 1 }]));
+        } catch (e) { }
+    } else {
+        const adjustment = action === 'increment' ? 1 : -1;
+        await prisma.orderItem.update({
+            where: { id: item.id },
+            data: { quantity: { increment: adjustment } }
+        });
+
+        // Update inventory
+        try {
+            if (action === 'increment') {
+                await import('./inventory.service.js').then(s => s.deductStockForOrderService(orderId, [{ menuItemId, quantity: 1 }]));
+            } else {
+                await import('./inventory.service.js').then(s => s.restoreStockForOrderService(orderId, [{ menuItemId, quantity: 1 }]));
+            }
+        } catch (e) { }
+    }
+
+    // Recalculate Total
+    const allItems = await prisma.orderItem.findMany({ where: { orderId } });
+    const newTotal = allItems.reduce((acc, i) => acc + (Number(i.priceSnapshot) * i.quantity), 0);
+
+    const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: { totalAmount: newTotal },
+        include: { items: { include: { menuItem: true } } }
+    });
+
+    // Emit socket event
+    try {
+        const { getIO } = await import('../socket.ts');
+        const getIO_ = getIO();
+        getIO_.emit('order:updated', { ...updatedOrder, items: updatedOrder.items });
+    } catch (err) { console.error("Socket emit failed:", err); }
+
+    return { message: 'Order updated', order: updatedOrder };
 };

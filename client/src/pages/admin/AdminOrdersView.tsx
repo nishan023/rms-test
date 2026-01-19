@@ -1,6 +1,6 @@
 
-import { useEffect } from "react";
-import { RefreshCw, Search, History, ListFilter, CheckCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { RefreshCw, Search, History, ListFilter } from "lucide-react";
 import OrdersExportPrint from "../../components/admin/OrdersExportPrint";
 import ToggleSideBar from "../../components/admin/ToggleSideBar";
 import ViewOrderDetailsModal from "../../components/admin/ViewOrderDetailsModal";
@@ -23,17 +23,62 @@ const AdminOrdersView = () => {
         error,
         isHistoryMode,
         setIsHistoryMode,
+        historyOrders,
     } = useOrderStore();
+
+    const [filterDate, setFilterDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [filterTable, setFilterTable] = useState<string>('all');
 
     const orders = getFilteredOrders();
 
+    // Advanced Filtering for Display
+    const displayedOrders = orders.filter(order => {
+        // Date Filter (Compare YYYY-MM-DD)
+        const orderDate = new Date(order.createdAt || Date.now()).toISOString().split('T')[0];
+        const matchesDate = !filterDate || orderDate === filterDate;
+
+        // Table Filter
+        const tableCode = order.table?.tableCode || order.tableNumber || "";
+        const matchesTable = filterTable === 'all' || tableCode === filterTable;
+
+        return matchesDate && matchesTable;
+    });
+
+    // Calculate Sales Summary (Always from History/Paid Orders for selected date)
+    const ordersForSummary = isHistoryMode ? displayedOrders : (historyOrders || []).filter(order => {
+        const orderDate = new Date(order.createdAt || Date.now()).toISOString().split('T')[0];
+        const matchesDate = !filterDate || orderDate === filterDate;
+        const tableCode = order.table?.tableCode || order.tableNumber || "";
+        const matchesTable = filterTable === 'all' || tableCode === filterTable;
+        return matchesDate && matchesTable;
+    });
+
     useEffect(() => {
-        if (isHistoryMode) fetchHistory();
-        else fetchOrders();
+        // Always fetch history initially to populate sales stats
+        fetchHistory().catch(console.error);
+        if (!isHistoryMode) fetchOrders();
 
         const cleanup = initializeSocket();
         return () => cleanup && cleanup();
     }, [fetchOrders, fetchHistory, initializeSocket, isHistoryMode]);
+
+    // Sales Summary Calculation
+    const salesSummary = ordersForSummary.reduce((acc, order) => {
+        const total = Number(order.totalAmount || 0);
+        acc.total += total;
+
+        const method = order.paymentMethod;
+        if (method === 'CASH') acc.cash += total;
+        else if (method === 'ONLINE') acc.online += total;
+        else if (method === 'CREDIT') acc.credit += total;
+        else if (method === 'MIXED') {
+            acc.cash += Number(order.cashAmount || 0);
+            acc.online += Number(order.onlineAmount || 0);
+        }
+        return acc;
+    }, { total: 0, cash: 0, online: 0, credit: 0 });
+
+
 
 
     return (
@@ -76,48 +121,99 @@ const AdminOrdersView = () => {
                     </div>
                 )}
 
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                    {/* Filter Tabs - Only show for Active Orders */}
-                    {!isHistoryMode && (
-                        <div className="flex gap-2 overflow-x-auto pb-2 flex-1 scrollbar-hide">
-                            {['all', 'pending', 'preparing', 'served', 'cancelled'].map((status) => (
-                                <button
-                                    key={status}
-                                    onClick={() => setSelectedStatus(status)}
-                                    className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all text-sm ${selectedStatus === status
-                                        ? 'bg-orange-600 text-white shadow-md'
-                                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-transparent'
-                                        }`}
+                {/* Filters and Sales Summary */}
+                <div className="flex flex-col gap-6 mb-6">
+                    {/* Controls */}
+                    <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between bg-white p-4 rounded-xl shadow-sm">
+                        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                            {/* Date Filter */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-semibold text-gray-500 uppercase">Date</label>
+                                <input
+                                    type="date"
+                                    value={filterDate}
+                                    onChange={(e) => setFilterDate(e.target.value)}
+                                    className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                />
+                            </div>
+
+                            {/* Status Filter */}
+                            {!isHistoryMode && (
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase">Status</label>
+                                    <select
+                                        value={selectedStatus}
+                                        onChange={(e) => setSelectedStatus(e.target.value)}
+                                        className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm bg-white"
+                                    >
+                                        <option value="all">All Statuses</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="preparing">Preparing</option>
+                                        <option value="served">Served</option>
+                                        <option value="cancelled">Cancelled</option>
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Table Filter */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-xs font-semibold text-gray-500 uppercase">Table No</label>
+                                <select
+                                    value={filterTable}
+                                    onChange={(e) => setFilterTable(e.target.value)}
+                                    className="w-full md:w-40 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm bg-white"
                                 >
-                                    {status?.charAt(0).toUpperCase() + status.slice(1)}
-                                </button>
-                            ))}
+                                    <option value="all">All Tables</option>
+                                    {Array.from(new Set(orders.map(o => o.tableNumber || o.table?.tableCode).filter(Boolean)))
+                                        .sort()
+                                        .map(code => {
+                                            const order = orders.find(o => (o.tableNumber || o.table?.tableCode) === code);
+                                            let label = String(code);
+                                            if (String(code).startsWith("WALKIN") && order) {
+                                                const identifier = order.customerName || order.customerPhone;
+                                                label = identifier ? `${identifier} (Walk-in)` : "Walk-in";
+                                            }
+                                            return <option key={String(code)} value={String(code)}>{label}</option>;
+                                        })
+                                    }
+                                </select>
+                            </div>
                         </div>
-                    )}
 
-                    {isHistoryMode && (
-                        <div className="flex-1 flex items-center">
-                            <span className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
-                                <CheckCircle className="w-4 h-4" /> Showing Paid Orders
-                            </span>
+                        {/* Search and Export */}
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-64">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search orders..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                                />
+                            </div>
+                            <OrdersExportPrint orders={displayedOrders} />
                         </div>
-                    )}
+                    </div>
 
-                    {/* Search Bar */}
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder={`Search ${isHistoryMode ? 'history' : 'active orders'}...`}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-sm shadow-sm"
-                        />
+                    {/* Sales Summary */}
+                    <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                        <h3 className="text-lg font-bold text-gray-800 mb-1">
+                            Total Sales (Paid Orders):
+                            <span className="text-emerald-600 ml-2">Rs. {salesSummary.total.toFixed(2)}</span>
+                        </h3>
+                        <div className="text-sm text-gray-600 flex gap-4">
+                            <span>Cash: <span className="font-semibold">Rs. {salesSummary.cash.toFixed(2)}</span></span>
+                            <span className="text-gray-300">|</span>
+                            <span>Online: <span className="font-semibold">Rs. {salesSummary.online.toFixed(2)}</span></span>
+                            <span className="text-gray-300">|</span>
+                            <span>Credit: <span className="font-semibold">Rs. {salesSummary.credit.toFixed(2)}</span></span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Export / Print Buttons */}
-                <OrdersExportPrint orders={orders} />
+                {/* OrdersExportPrint moved to header */}
+
 
                 {/* Loading State */}
                 {isLoading && orders.length === 0 && (
@@ -130,10 +226,10 @@ const AdminOrdersView = () => {
                 )}
 
                 {/* Orders Grid */}
-                {!isLoading || orders.length > 0 ? (
+                {!isLoading || displayedOrders.length > 0 ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {orders && orders.length > 0 ? (
-                            orders.map((order) => {
+                        {displayedOrders && displayedOrders.length > 0 ? (
+                            displayedOrders.map((order) => {
                                 const tableCode = order.table?.tableCode || order.tableNumber || "";
                                 const isWalkIn = tableCode.startsWith("WALKIN");
 

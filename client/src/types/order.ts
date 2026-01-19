@@ -6,6 +6,7 @@ export type CustomerType = 'DINE_IN' | 'WALK_IN' | 'ONLINE';
 
 export interface OrderItem {
   id: string;
+  menuItemId: string;
   name: string;
   quantity: number;
   menuItem: {
@@ -27,6 +28,8 @@ export interface Order {
   status: OrderStatus;
   totalAmount: number;
   finalAmount?: number;
+  cashAmount?: number;
+  onlineAmount?: number;
   items: OrderItem[];
   createdAt?: string;
   updatedAt?: string;

@@ -5,8 +5,8 @@ import type { MenuItem } from '../types/menu';
 
 interface CartStore {
   cart: (MenuItem & { quantity: number })[];
-  
-  addToCart: (item: MenuItem) => void;
+
+  addToCart: (item: MenuItem, quantity?: number) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -17,16 +17,16 @@ interface CartStore {
 export const useCustomerCartStore = create<CartStore>((set, get) => ({
   cart: [],
 
-  addToCart: (item) => set((state) => {
+  addToCart: (item, quantity = 1) => set((state) => {
     const existing = state.cart.find(i => i.id === item.id);
     if (existing) {
       return {
         cart: state.cart.map(i =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
         )
       };
     }
-    return { cart: [...state.cart, { ...item, quantity: 1 }] };
+    return { cart: [...state.cart, { ...item, quantity }] };
   }),
 
   removeFromCart: (id) => set((state) => ({

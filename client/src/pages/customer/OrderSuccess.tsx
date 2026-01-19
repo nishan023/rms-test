@@ -1,7 +1,3 @@
-// ============================================
-// FILE: src/pages/customer/OrderSuccess.tsx
-// Order Confirmation Page
-// ============================================
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -43,7 +39,8 @@ export const OrderSuccess: React.FC = () => {
                     image: item.image ?? '🍽️',
                     category: item.category ?? 'Other',
                     isVeg: item.isVeg ?? true,
-                    isAvailable: item.isAvailable ?? true, // Add missing property to satisfy MenuItem
+                    isAvailable: item.isAvailable ?? true,
+                    isSpecial: item.isSpecial ?? false, // Add missing property to satisfy MenuItem
                 }, item.quantity);
             });
         }

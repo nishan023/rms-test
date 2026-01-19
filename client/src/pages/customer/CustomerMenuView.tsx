@@ -8,6 +8,8 @@ import { useMenuStore } from "../../store/useMenuStore";
 import { useCustomerOrderStore } from "../../store/useCustomerOrderStore";
 import { useCustomerCartStore } from "../../store/useCustomerCartStore";
 
+import type { MenuItem } from "../../types/menu";
+
 // Top category images (these are just for display, user picks from all admin categories)
 const TOP_CATEGORIES = [
   { name: "All", icon: "🍽️" },
@@ -143,8 +145,21 @@ const CustomerMenuView: React.FC = () => {
   const cartTotal = getTotalAmount();
   const cartItemCount = getTotalItems();
 
+  // Notification State
+  const [notification, setNotification] = useState<{ message: string; show: boolean; }>({ message: "", show: false });
+
+  const handleAddToCart = (item: MenuItem) => {
+    addToCart(item);
+    setNotification({ message: `${item.name}  added `, show: true });
+    
+    // Clear any existing timeout if needed (optional optimization)
+    setTimeout(() => {
+      setNotification((prev) => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-0">
       {/* Header */}
       <header className="bg-white shadow sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 flex justify-between items-center h-16 lg:h-20">
@@ -178,7 +193,7 @@ const CustomerMenuView: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowCart((s) => !s)}
-              className="relative p-2 bg-[#16516f] text-white rounded-lg hover:bg-[#11425c]"
+              className="hidden lg:block relative p-2 bg-[#16516f] text-white rounded-lg hover:bg-[#11425c]"
             >
               <ShoppingCart className="w-5 h-5 lg:w-6 lg:h-6" />
               {cartItemCount > 0 && (
@@ -284,7 +299,7 @@ const CustomerMenuView: React.FC = () => {
               <p className="text-gray-600 text-sm line-clamp-2">{item.description}</p>
 
               <button
-                onClick={() => addToCart(item)}
+                onClick={() => handleAddToCart(item)}
                 disabled={!item.isAvailable}
                 className="mt-auto w-full py-2 bg-[#16516f] text-white rounded-lg font-semibold hover:bg-[#11425c] disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
               >
@@ -439,6 +454,29 @@ const CustomerMenuView: React.FC = () => {
               Continue Shopping
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Floating Action Button for Mobile Cart - Moved up as requested */}
+      <button
+        onClick={() => setShowCart(true)}
+        className="lg:hidden fixed bottom-32 right-6 w-14 h-14 bg-[#16516f] text-white rounded-full shadow-2xl flex items-center justify-center z-40 hover:bg-[#11425c] transition-transform hover:scale-105"
+      >
+        <ShoppingCart className="w-6 h-6" />
+        {cartItemCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold border-2 border-[#16516f]">
+            {cartItemCount}
+          </span>
+        )}
+      </button>
+
+      {/* Cart Notification Toast - Moved to top, smaller font ("proper professional way") */}
+      {notification.show && (
+        <div className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-gray-900/95 backdrop-blur-sm text-white px-4 py-2.5 rounded-full shadow-xl z-50 flex items-center gap-2 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <Check className="w-2.5 h-2.5 text-white" />
+          </div>
+          <span className="text-sm font-medium whitespace-nowrap">{notification.message}</span>
         </div>
       )}
 

@@ -6,73 +6,50 @@ export const fetchCustomers = async () => {
   return response.data;
 };
 
-
+// Add a customer
 export const addCustomer = async (fullName: string, phoneNumber: string) => {
   const response = await api.post("/admin/credit-accounts", { fullName, phoneNumber });
+  return response.data;
+};
+
+// Search customers
+export const searchCustomers = async (query: string) => {
+  const response = await api.get(`/admin/credit-accounts/search`, {
+    params: { query }
+  });
+  return response.data;
+};
+
+// Get customer details (including history)
+export const getCustomerDetails = async (customerId: string) => {
+  const response = await api.get(`/admin/credit-accounts/${customerId}`);
+  return response.data;
+};
+
+// Settle (repay) customer debt (Record Payment)
+export const settleDebt = async (
+  customerId: string,
+  amount: number,
+  notes?: string
+) => {
+  const response = await api.post(`/admin/credit-accounts/${customerId}/payment`, {
+    amount,
+    description: notes
+  });
   return response.data;
 };
 
 // Update a customer
 export const updateCustomer = (
   customerId: string,
-  updates: Partial<{
-    name: string;
-    phone: string;
-    email: string;
-  }>
+  updates: { fullName?: string; phoneNumber?: string }
 ) => {
-  return api.put(`/credit/customers/${customerId}`, updates);
+  return api.patch(`/admin/credit-accounts/${customerId}`, updates);
 };
 
 // Delete a customer
 export const deleteCustomer = (customerId: string) => {
-  return api.delete(`/credit/customers/${customerId}`);
+  return api.delete(`/admin/credit-accounts/${customerId}`);
 };
 
-// Search customers
-export const searchCustomers = (query: string) => {
-  return api.get(`/credit/customers/search`, {
-    params: { q: query }
-  });
-};
-
-// Get credit history for a customer
-export const getCreditHistory = (customerId: string) => {
-  return api.get(`/credit/customers/${customerId}/history`);
-};
-
-// Add a credit transaction for a customer
-export const addCreditTransaction = (
-  customerId: string,
-  transaction: {
-    type: "borrow" | "repayment";
-    amount: number;
-    notes?: string;
-  }
-) => {
-  return api.post(`/credit/customers/${customerId}/transactions`, transaction);
-};
-
-// Settle (repay) customer debt
-export const settleDebt = (
-  customerId: string,
-  amount: number,
-  notes?: string
-) => {
-  return api.post(`/credit/customers/${customerId}/settle`, { amount, notes });
-};
-
-// Search credit accounts by phone number
-export const searchCreditAccountByPhone = async (phoneNumber: string) => {
-  const response = await api.get(`/admin/credit-accounts/search`, {
-    params: { query: phoneNumber }
-  });
-  return response.data;
-};
-
-// Create credit account
-export const createCreditAccount = async (fullName: string, phoneNumber: string) => {
-  const response = await api.post("/admin/credit-accounts", { fullName, phoneNumber });
-  return response.data;
-};
 

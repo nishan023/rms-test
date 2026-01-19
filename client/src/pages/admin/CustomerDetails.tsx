@@ -9,12 +9,19 @@ import { AddDebtModal } from '../../components/admin/payment/AddDebtModal';
 const CustomerDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getCustomerById, getCreditHistory } = useCreditStore();
+  const { getCustomerById, getCreditHistory, fetchCustomerDetails } = useCreditStore();
   
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
 
   const customer = id ? getCustomerById(id) : null;
   const creditHistory = id ? getCreditHistory(id) : [];
+
+  // Fetch detailed history on mount
+  React.useEffect(() => {
+    if (id) {
+      fetchCustomerDetails(id);
+    }
+  }, [id, fetchCustomerDetails]);
 
   if (!customer) {
     return (
@@ -81,44 +88,77 @@ const CustomerDetails: React.FC = () => {
             {creditHistory.map((transaction) => (
               <div
                 key={transaction.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
               >
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    transaction.type === 'debt' 
-                      ? 'bg-red-100 text-red-600' 
-                      : 'bg-green-100 text-green-600'
-                  }`}>
-                    <DollarSign className="w-6 h-6" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                      transaction.type === 'debt' 
+                        ? 'bg-red-100 text-red-600' 
+                        : 'bg-green-100 text-green-600'
+                    }`}>
+                      <DollarSign className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {transaction.type === 'debt' ? 'Debt Added' : 'Payment Received'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {new Date(transaction.timestamp).toLocaleString()}
+                      </p>
+                      {transaction.notes && (
+                        <p className="text-sm text-gray-500 mt-1">{transaction.notes}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      {transaction.type === 'debt' ? 'Debt Added' : 'Payment Received'}
+                  <div className="text-right">
+                    <p className={`text-xl font-bold ${
+                      transaction.type === 'debt' ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {transaction.type === 'debt' ? '+' : '-'} Rs. {transaction.amount.toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {new Date(transaction.timestamp).toLocaleString()}
+                      Balance: Rs. {transaction.balance.toLocaleString()}
                     </p>
-                    {transaction.notes && (
-                      <p className="text-sm text-gray-500 mt-1">{transaction.notes}</p>
-                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className={`text-xl font-bold ${
-                    transaction.type === 'debt' ? 'text-red-600' : 'text-green-600'
-                  }`}>
-                    {transaction.type === 'debt' ? '+' : '-'} Rs. {transaction.amount.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Balance: Rs. {transaction.balance.toLocaleString()}
-                  </p>
-                </div>
+
+                {/* Order Details */}
+                {transaction.order && transaction.order.items.length > 0 && (
+                  <div className="mt-4 pl-16 border-t pt-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Order Details</p>
+                    <div className="bg-white rounded border border-gray-200 p-3">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-gray-500 border-b">
+                            <th className="pb-2 font-medium">Item</th>
+                            <th className="pb-2 font-medium text-right">Qty</th>
+                            <th className="pb-2 font-medium text-right">Price</th>
+                            <th className="pb-2 font-medium text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {transaction.order.items.map((item) => (
+                            <tr key={item.id} className="border-b last:border-0 border-gray-100">
+                              <td className="py-2 text-gray-800">{item.menuItem.name}</td>
+                              <td className="py-2 text-right text-gray-600">{item.quantity}</td>
+                              <td className="py-2 text-right text-gray-600">Rs. {item.menuItem.price}</td>
+                              <td className="py-2 text-right font-medium text-gray-800">
+                                Rs. {item.quantity * item.menuItem.price}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </Card>
-
+      
       {/* Add Debt Modal */}
       <AddDebtModal
         customer={customer}

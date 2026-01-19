@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Printer, Receipt, Search, CheckCircle, XCircle, UserPlus, Minus, Plus, Trash2 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import { payCash, payOnline, payMixed, payCredit } from '../../api/payment';
-import { searchCreditAccountByPhone, createCreditAccount } from '../../api/credit';
+import { searchCustomers, addCustomer } from '../../api/credit';
 import type { Order, PaymentMethod, DiscountType } from '../../types/order';
 import { useOrderStore } from '../../store/useOrderStore';
 import toast from 'react-hot-toast';
@@ -91,7 +91,7 @@ const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModal
         setIsSearching(true);
         setCustomerFound(null);
         try {
-            const response = await searchCreditAccountByPhone(customerPhone);
+            const response = await searchCustomers(customerPhone);
             if (response.data?.length > 0) {
                 setFoundCustomer(response.data[0]);
                 setCustomerFound(true);
@@ -109,8 +109,8 @@ const ViewOrderDetailsModal = ({ isOpen, order, onClose }: ViewOrderDetailsModal
     const handleCreateAccount = async () => {
         if (!newCustomerName || !customerPhone) return toast.error('Name/Phone required');
         try {
-            const response = await createCreditAccount(newCustomerName, customerPhone);
-            setFoundCustomer(response.data);
+            const response = await addCustomer(newCustomerName, customerPhone);
+            setFoundCustomer(response.data || response); // fallback depending on what addCustomer returns
             setCustomerFound(true);
             setShowCreateForm(false);
             toast.success('Account created');

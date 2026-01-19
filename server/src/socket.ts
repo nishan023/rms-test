@@ -33,10 +33,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     });
 
     io.on('connection', (socket) => {
-        console.log(`User connected: ${socket.id}, UserID: ${(socket as any).user?.userId}`);
-
         socket.on('disconnect', () => {
-            console.log('User disconnected:', socket.id);
         });
     });
 

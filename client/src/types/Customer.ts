@@ -20,4 +20,15 @@ export interface CreditTransaction {
   balance: number;
   notes?: string;
   timestamp: Date;
+  order?: {
+    id: string;
+    items: Array<{
+      id: string;
+      quantity: number;
+      menuItem: {
+        name: string;
+        price: number;
+      };
+    }>;
+  };
 }

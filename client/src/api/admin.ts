@@ -1,6 +1,21 @@
 // admin.ts
 import api from "./axios";
 
+export async function getAllTablesApi() {
+  const response = await api.get("/tables");
+  return response.data;
+}
+
+export async function createTableApi(tableType: "PHYSICAL" | "WALK_IN" | "ONLINE") {
+  const response = await api.post("/tables/generate-qr", { tableType });
+  return response.data;
+}
+
+export async function deleteTableApi(tableId: string) {
+  const response = await api.delete(`/tables/${tableId}`);
+  return response.data;
+}
+
 export async function generateQrApi(tableCode: string) {
   const response = await api.post("/tables/generate-qr", { tableCode });
   return response.data;

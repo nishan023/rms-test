@@ -31,7 +31,17 @@ export const getCreditAccountDetails = async (accountId: string) => {
         include: {
             ledger: {
                 orderBy: { createdAt: 'desc' },
-                include: { order: true }
+                include: {
+                    order: {
+                        include: {
+                            items: {
+                                include: {
+                                    menuItem: true
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     });

@@ -15,9 +15,9 @@ export const connectSocket = (token: string) => {
 };
 
 socket.on("connect", () => {
-    console.log("Connected to socket server:", socket.id);
+    // console.log("Connected to socket server:", socket.id);
 });
 
 socket.on("disconnect", () => {
-    console.log("Disconnected from socket server");
+    // console.log("Disconnected from socket server");
 });

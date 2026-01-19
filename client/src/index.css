@@ -14,7 +14,7 @@
   }
 }
 
-@layer components {
+/* @layer components {
   .btn-primary {
     @apply bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-lg font-semibold transition-all;
   }
@@ -22,4 +22,4 @@
   .card {
     @apply bg-white rounded-xl shadow-card border border-gray-200 p-4;
   }
-}
+} */

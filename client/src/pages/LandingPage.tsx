@@ -1,75 +1,100 @@
 import { useNavigate } from "react-router-dom";
 import {
     Menu,
-    ChevronRight,
     QrCode,
     Settings,
-    Users,
     CreditCard,
     CheckCircle2,
     ArrowRight,
     ChevronDown,
-    LayoutDashboard,
     Zap,
     ShieldCheck,
-    Smartphone
+    Smartphone,
+    TrendingUp,
+    Clock,
+    Users,
+    Sparkles,
+    Star,
+    Play,
+    Award,
+    BarChart3,
+    Globe,
+    Heart,
+    Rocket
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import logo from "../assets/logo.png";
 
 const LandingPage = () => {
     const navigate = useNavigate();
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            setMousePosition({ x: e.clientX, y: e.clientY });
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+        };
+    }, []);
 
     const features = [
         {
-            title: "Digital Menu Management",
-            desc: "Update items, prices, and availability in real-time. No more reprinting paper menus.",
-            icon: <Menu className="w-6 h-6 text-[#16516f]" />
+            title: "Digital Menu Magic",
+            desc: "Update items, prices, and availability in real-time. Your menu evolves with your business instantly.",
+            icon: <Menu className="w-8 h-8" />,
+            gradient: "from-[#16516f] to-[#1a5b7d]",
+            bgGradient: "from-[#16516f]/10 to-[#1a5b7d]/5"
         },
         {
-            title: "QR Code Ordering",
-            desc: "Contactless ordering for dine-in customers. Reduce wait times and improve efficiency.",
-            icon: <QrCode className="w-6 h-6 text-[#16516f]" />
+            title: "QR Code Revolution",
+            desc: "Contactless ordering that delights customers. Watch your service speed soar by 45%.",
+            icon: <QrCode className="w-8 h-8" />,
+            gradient: "from-orange-500 to-red-500",
+            bgGradient: "from-orange-500/10 to-red-500/5"
         },
         {
-            title: "Inventory Tracking",
-            desc: "Keep tabs on your stock levels and get alerts when items are running low.",
-            icon: <Settings className="w-6 h-6 text-[#16516f]" />
+            title: "Smart Inventory",
+            desc: "Never run out unexpectedly. Intelligent alerts keep you always prepared and stocked.",
+            icon: <Settings className="w-8 h-8" />,
+            gradient: "from-emerald-500 to-teal-500",
+            bgGradient: "from-emerald-500/10 to-teal-500/5"
         },
         {
-            title: "Customer Ledger",
-            desc: "Manage credit and loyalty for regular customers with a powerful built-in ledger.",
-            icon: <CreditCard className="w-6 h-6 text-[#16516f]" />
+            title: "Customer Loyalty",
+            desc: "Build relationships that last. Credit ledger for your trusted regulars and VIPs.",
+            icon: <CreditCard className="w-8 h-8" />,
+            gradient: "from-purple-500 to-pink-500",
+            bgGradient: "from-purple-500/10 to-pink-500/5"
+        },
+        {
+            title: "Real-Time Analytics",
+            desc: "Track sales, popular items, and customer trends with beautiful, insightful dashboards.",
+            icon: <BarChart3 className="w-8 h-8" />,
+            gradient: "from-blue-500 to-cyan-500",
+            bgGradient: "from-blue-500/10 to-cyan-500/5"
+        },
+        {
+            title: "Global Reach",
+            desc: "Serve customers anywhere, anytime. Multi-language support and global payment options.",
+            icon: <Globe className="w-8 h-8" />,
+            gradient: "from-indigo-500 to-violet-500",
+            bgGradient: "from-indigo-500/10 to-violet-500/5"
         }
     ];
 
-    const pricing = [
-        {
-            name: "Basic",
-            price: "499",
-            features: ["Single Outlet", "Digital Menu", "QR Ordering", "Standard Support"],
-            button: "Start Free",
-            active: false
-        },
-        {
-            name: "Premium",
-            price: "1999",
-            features: ["Up to 3 Outlets", "Inventory Management", "Credit Ledger", "Priority Support", "Analytics Dashboard"],
-            button: "Most Popular",
-            active: true
-        },
-        {
-            name: "Enterprise",
-            price: "Custom",
-            features: ["Unlimited Outlets", "Custom Domain", "White Labeling", "Dedicated Manager", "Full API Access"],
-            button: "Contact Us",
-            active: false
-        }
+    const stats = [
+        { number: "500+", label: "Happy Restaurants", icon: <Users className="w-6 h-6" />, color: "from-[#16516f] to-[#1a5b7d]" },
+        { number: "45%", label: "Faster Service", icon: <TrendingUp className="w-6 h-6" />, color: "from-orange-500 to-red-500" },
+        { number: "24/7", label: "Support", icon: <Clock className="w-6 h-6" />, color: "from-emerald-500 to-teal-500" },
+        { number: "99.9%", label: "Uptime", icon: <Sparkles className="w-6 h-6" />, color: "from-purple-500 to-pink-500" }
     ];
 
     const faqs = [
         {
-            q: "What is LeafClutch technology?",
+            q: "What is LeafClutch Technology?",
             a: "LeafClutch is a modern restaurant management platform designed to help cafes, restaurants, and hotels digitize their menus and streamline operations through QR ordering and smart admin tools."
         },
         {
@@ -79,90 +104,198 @@ const LandingPage = () => {
         {
             q: "How does the credit ledger work?",
             a: "The credit ledger allows you to record 'Pay Later' orders for trusted customers. You can track their total due, send reminders, and manage payments easily."
+        },
+        {
+            q: "Can I customize my digital menu?",
+            a: "Absolutely! You have full control over your menu's appearance, categories, items, and pricing. Update everything in real-time with just a few clicks."
         }
     ];
 
-    const navLinks = ["Home", "Features", "Pricing", "About"];
-
     return (
-        <div className="min-h-screen bg-white font-sans text-slate-800">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-[#16516f]/5 font-sans text-slate-800 overflow-x-hidden relative">
+            {/* Animated Background Elements */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div 
+                    className="absolute top-20 left-10 w-96 h-96 bg-[#16516f]/10 rounded-full blur-3xl animate-blob"
+                    style={{ transform: `translate(${mousePosition.x * 0.01}px, ${mousePosition.y * 0.01}px)` }}
+                ></div>
+                <div 
+                    className="absolute top-40 right-10 w-[500px] h-[500px] bg-orange-400/10 rounded-full blur-3xl animate-blob animation-delay-2000"
+                    style={{ transform: `translate(${mousePosition.x * -0.01}px, ${mousePosition.y * -0.01}px)` }}
+                ></div>
+                <div 
+                    className="absolute -bottom-20 left-1/2 w-[600px] h-[600px] bg-purple-400/10 rounded-full blur-3xl animate-blob animation-delay-4000"
+                    style={{ transform: `translate(${mousePosition.x * 0.005}px, ${mousePosition.y * 0.005}px)` }}
+                ></div>
+            </div>
+
             {/* Navbar */}
-            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-[#16516f] rounded-lg flex items-center justify-center">
-                        <LayoutDashboard className="w-5 h-5 text-white" />
+            <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200/50 shadow-xl shadow-slate-900/5">
+                <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+                    <div className="flex items-center gap-4 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-br from-[#16516f] to-[#1a5b7d] rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                            <div className="relative w-14 h-14 bg-gradient-to-br from-[#16516f] to-[#1a5b7d] rounded-2xl flex items-center justify-center shadow-2xl shadow-[#16516f]/30 group-hover:scale-110 transition-transform duration-300 p-2">
+                                <img src={logo} alt="LeafClutch Logo" className="w-full h-full object-contain" />
+                            </div>
+                        </div>
+                        <span className="text-3xl font-black tracking-tight">
+                            <span className="text-slate-900">Leaf</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16516f] to-[#1a5b7d]">Clutch</span>
+                        </span>
                     </div>
-                    <span className="text-xl font-bold tracking-tight text-slate-900">LeafClutch <span className="text-[#16516f]">Technology</span></span>
+
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate('/admin/login')}
+                            className="relative group px-8 py-3 bg-gradient-to-r from-[#16516f] to-[#1a5b7d] text-white rounded-full font-bold text-sm shadow-2xl shadow-[#16516f]/30 hover:shadow-[#16516f]/50 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
+                        >
+                            <span className="relative z-10 flex items-center gap-2">
+                                Get Started
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </button>
+                    </div>
                 </div>
-                <div className="hidden md:flex items-center gap-8">
-                    {navLinks.map(link => (
-                        <a key={link} href={`#${link.toLowerCase()}`} className="text-sm font-medium text-slate-600 hover:text-[#16516f] transition-colors">{link}</a>
-                    ))}
-                </div>
-                <button
-                    onClick={() => navigate('/admin/login')}
-                    className="bg-[#16516f] text-white px-5 py-2 rounded-full text-sm font-bold shadow-lg shadow-[#16516f]/20 hover:bg-[#114058] transition-all hover:scale-105 active:scale-95"
-                >
-                    Login
-                </button>
             </nav>
 
             {/* Hero Section */}
-            <section id="home" className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div className="space-y-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider">
-                        <Zap className="w-3 h-3" /> Elevate your dining experience
-                    </div>
-                    <h1 className="text-5xl lg:text-7xl font-extrabold text-slate-900 leading-[1.1]">
-                        Digital Dining, <br />
-                        <span className="text-[#16516f] italic">Simplified.</span>
-                    </h1>
-                    <p className="text-lg text-slate-600 max-w-lg leading-relaxed">
-                        From QR-based ordering to powerful inventory management, LeafClutch Technology provides you with the modern tools to run your restaurant like a pro.
-                    </p>
-                    <div className="flex flex-wrap gap-4 pt-4">
-                        <button className="bg-[#16516f] text-white px-8 py-4 rounded-xl font-bold flex items-center gap-2 group shadow-xl shadow-[#16516f]/10">
-                            Get Started Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                        <button className="bg-white text-slate-900 border border-slate-200 px-8 py-4 rounded-xl font-bold hover:bg-slate-50 transition-colors">
-                            Request Demo
-                        </button>
-                    </div>
-                </div>
-                <div className="relative">
-                    <div className="absolute -inset-4 bg-orange-100 rounded-[2rem] -rotate-2 -z-10"></div>
-                    <img
-                        src="/landing_hero_restaurant_1768761483087.png"
-                        alt="Hero"
-                        className="rounded-[2rem] shadow-2xl transition-transform hover:scale-[1.02] duration-500"
-                    />
-                    <div className="absolute -bottom-8 -left-8 bg-white p-6 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-4 max-w-xs animate-bounce-subtle">
-                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                            <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+            <section className="relative max-w-7xl mx-auto px-6 pt-24 pb-32 min-h-[90vh] flex items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center w-full">
+                    <div className="space-y-8 relative z-10">
+                        <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-[#16516f]/10 border-2 border-emerald-500/20 backdrop-blur-sm animate-fade-in">
+                            <Zap className="w-5 h-5 text-emerald-600 animate-pulse" />
+                            <span className="text-sm font-black text-emerald-700 tracking-wide">The Future of Dining is Here</span>
+                            <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
                         </div>
-                        <div>
-                            <p className="font-bold text-slate-900">45% Faster Service</p>
-                            <p className="text-xs text-slate-500">Verified by local cafes</p>
+
+                        <h1 className="text-7xl lg:text-8xl xl:text-9xl font-black leading-[0.9] tracking-tight animate-slide-up">
+                            <span className="text-slate-900">Digital</span>
+                            <br />
+                            <span className="text-slate-900">Dining,</span>
+                            <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16516f] via-[#1a5b7d] to-orange-500 animate-gradient">
+                                Redefined
+                            </span>
+                        </h1>
+
+                        <p className="text-2xl text-slate-600 max-w-2xl leading-relaxed font-semibold animate-slide-up-delay">
+                            Transform your restaurant with cutting-edge QR ordering, real-time inventory, and powerful admin tools.
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16516f] to-orange-500 font-black"> Join the digital revolution.</span>
+                        </p>
+
+                        <div className="flex flex-wrap gap-5 pt-6 animate-slide-up-delay-2">
+                            <button 
+                                onClick={() => navigate('/admin/login')}
+                                className="group relative px-10 py-6 bg-gradient-to-r from-[#16516f] to-[#1a5b7d] text-white rounded-2xl font-black text-lg shadow-2xl shadow-[#16516f]/40 hover:shadow-[#16516f]/60 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
+                            >
+                                <span className="relative z-10 flex items-center gap-3">
+                                    Get Started Free
+                                    <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                                </span>
+                                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            </button>
+
+                            <button className="group px-10 py-6 bg-white/90 backdrop-blur-sm text-slate-900 border-2 border-slate-200 rounded-2xl font-black text-lg hover:bg-white hover:border-[#16516f]/40 transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl flex items-center gap-3">
+                                <Play className="w-6 h-6 text-[#16516f] group-hover:scale-110 transition-transform" />
+                                Watch Demo
+                            </button>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-8 animate-slide-up-delay-3">
+                            {stats.map((stat, i) => (
+                                <div 
+                                    key={i} 
+                                    className="group relative p-5 rounded-2xl bg-white/80 backdrop-blur-sm border-2 border-slate-200/50 hover:border-transparent transition-all duration-300 hover:scale-110 hover:-translate-y-1"
+                                >
+                                    <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity duration-300`}></div>
+                                    <div className={`flex justify-center mb-3 text-transparent bg-clip-text bg-gradient-to-r ${stat.color}`}>
+                                        {stat.icon}
+                                    </div>
+                                    <p className="text-3xl font-black text-slate-900">{stat.number}</p>
+                                    <p className="text-xs text-slate-600 font-bold uppercase tracking-wider">{stat.label}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="relative lg:scale-110 animate-float">
+                        <div className="absolute -inset-10 bg-gradient-to-r from-[#16516f]/20 via-orange-400/20 to-purple-400/20 rounded-[4rem] blur-3xl animate-pulse-slow"></div>
+
+                        <div className="relative rounded-[3rem] overflow-hidden shadow-2xl shadow-slate-900/30 border-8 border-white/80 backdrop-blur-sm transform hover:rotate-2 transition-transform duration-700">
+                            <img
+                                src="/chef.webp"
+                                alt="Restaurant Hero"
+                                className="w-full h-auto"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#16516f]/30 via-transparent to-transparent"></div>
+                        </div>
+
+                        {/* Floating Cards */}
+                        <div className="absolute -bottom-8 -left-8 bg-white/95 backdrop-blur-xl p-6 rounded-3xl shadow-2xl border-2 border-slate-100 flex items-center gap-4 max-w-xs hover:scale-110 transition-transform duration-300 animate-float-delay">
+                            <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center shadow-xl">
+                                <CheckCircle2 className="w-8 h-8 text-white" />
+                            </div>
+                            <div>
+                                <p className="font-black text-slate-900 text-xl">45% Faster</p>
+                                <p className="text-sm text-slate-500 font-bold">Service Speed</p>
+                            </div>
+                        </div>
+
+                        <div className="absolute -top-8 -right-8 bg-gradient-to-br from-orange-400 to-red-500 p-5 rounded-3xl shadow-2xl animate-bounce-slow">
+                            <Star className="w-10 h-10 text-white fill-white" />
+                        </div>
+
+                        <div className="absolute top-1/2 -right-12 bg-gradient-to-br from-[#16516f] to-[#1a5b7d] p-4 rounded-2xl shadow-2xl animate-float-delay-2">
+                            <Award className="w-8 h-8 text-white" />
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Feature Section */}
-            <section id="features" className="bg-slate-50 py-24">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-16 space-y-4">
-                        <h2 className="text-3xl lg:text-5xl font-extrabold text-slate-900">Built for modern businesses</h2>
-                        <p className="text-slate-500 max-w-2xl mx-auto italic">Everything you need to manage your restaurant in one smart platform.</p>
+            <section className="relative py-32 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white to-slate-50"></div>
+
+                <div className="relative max-w-7xl mx-auto px-6">
+                    <div className="text-center mb-20 space-y-6">
+                        <div className="inline-flex items-center gap-3 px-5 py-3 rounded-full bg-gradient-to-r from-[#16516f]/10 to-purple-500/10 border-2 border-[#16516f]/20">
+                            <Sparkles className="w-5 h-5 text-[#16516f]" />
+                            <span className="text-sm font-black text-[#16516f] uppercase tracking-widest">Features</span>
+                        </div>
+                        <h2 className="text-6xl lg:text-7xl font-black text-slate-900 leading-tight">
+                            Everything you need,
+                            <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16516f] to-orange-500">
+                                nothing you don't
+                            </span>
+                        </h2>
+                        <p className="text-xl text-slate-600 max-w-3xl mx-auto font-semibold leading-relaxed">
+                            Powerful features designed to make your restaurant operations seamless, efficient, and profitable.
+                        </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {features.map((f, i) => (
-                            <div key={i} className="bg-white p-8 rounded-3xl border border-slate-100 hover:border-[#16516f]/20 hover:shadow-xl transition-all group">
-                                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform bg-gradient-to-br from-white to-slate-100 shadow-sm border border-slate-50">
+                            <div
+                                key={i}
+                                className="group relative bg-white/90 backdrop-blur-sm p-8 rounded-3xl border-2 border-slate-200/50 hover:border-transparent transition-all duration-500 hover:scale-105 hover:-translate-y-3 shadow-xl hover:shadow-2xl"
+                                style={{ animationDelay: `${i * 100}ms` }}
+                            >
+                                <div className={`absolute inset-0 bg-gradient-to-br ${f.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl -z-10 blur-xl`}></div>
+
+                                <div className={`w-20 h-20 bg-gradient-to-br ${f.gradient} rounded-3xl flex items-center justify-center mb-6 text-white shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-transform duration-500`}>
                                     {f.icon}
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">{f.title}</h3>
-                                <p className="text-slate-600 text-sm leading-relaxed">{f.desc}</p>
+
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#16516f] group-hover:to-orange-500 transition-all duration-300">
+                                    {f.title}
+                                </h3>
+                                <p className="text-slate-600 text-base leading-relaxed font-medium">
+                                    {f.desc}
+                                </p>
                             </div>
                         ))}
                     </div>
@@ -170,156 +303,293 @@ const LandingPage = () => {
             </section>
 
             {/* Big Feature Section */}
-            <section className="py-24 max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                <div className="order-2 lg:order-1 relative">
-                    <img src="/qr_scanning_hand_1768761497253.png" alt="QR Scanning" className="rounded-3xl shadow-2xl" />
-                    <div className="absolute -top-10 -right-10 bg-white p-4 rounded-2xl shadow-xl border border-slate-100 animate-pulse">
-                        <QrCode className="w-12 h-12 text-[#16516f]" />
-                    </div>
+            <section className="relative py-32 bg-gradient-to-br from-[#16516f] via-[#1a5b7d] to-[#11425c] overflow-hidden">
+                <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')]"></div>
                 </div>
-                <div className="order-1 lg:order-2 space-y-8">
-                    <h2 className="text-4xl lg:text-5xl font-black text-slate-900 leading-tight">
-                        We make you look <br />
-                        <span className="text-[#16516f] underline decoration-orange-400 underline-offset-8">different.</span>
-                    </h2>
-                    <p className="text-slate-600 leading-relaxed text-lg">
-                        Stand out with a digital experience that wows your guests. Our platform doesn't just manage orders; it elevates your brand's technical identity, making every interaction premium and smooth.
-                    </p>
-                    <ul className="space-y-4">
-                        {[
-                            "Real-time order tracking for guests",
-                            "Beautiful branded digital menus",
-                            "Integrated WhatsApp notifications",
-                            "Seamless credit management"
-                        ].map(item => (
-                            <li key={item} className="flex items-center gap-3 font-semibold text-slate-700">
-                                <ShieldCheck className="w-5 h-5 text-[#16516f]" /> {item}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </section>
 
-            {/* Pricing Section */}
-            <section id="pricing" className="py-24 bg-[#16516f] text-white">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-16 space-y-4">
-                        <h2 className="text-3xl lg:text-5xl font-extrabold">Simple & Transparent Pricing</h2>
-                        <p className="text-blue-100 italic">Choose a plan that fits your hospitality needs.</p>
+                <div className="relative max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                    <div className="space-y-8 text-white">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                            <Rocket className="w-4 h-4" />
+                            <span className="text-sm font-black uppercase tracking-widest">Stand Out</span>
+                        </div>
+                        <h2 className="text-6xl lg:text-7xl font-black leading-tight">
+                            Stand out from
+                            <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-yellow-300 to-orange-200">
+                                the competition
+                            </span>
+                        </h2>
+
+                        <p className="text-xl text-blue-100 leading-relaxed font-semibold">
+                            Your customers expect modern, seamless experiences. LeafClutch delivers exactly that, making your restaurant feel premium and tech-forward.
+                        </p>
+
+                        <div className="space-y-5">
+                            {[
+                                "Real-time order tracking for guests",
+                                "Beautiful branded digital menus",
+                                "Integrated WhatsApp notifications",
+                                "Seamless credit management"
+                            ].map((item, i) => (
+                                <div key={i} className="flex items-center gap-5 group">
+                                    <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center group-hover:bg-white/20 transition-all duration-300 group-hover:scale-110 border-2 border-white/20">
+                                        <ShieldCheck className="w-6 h-6 text-emerald-300" />
+                                    </div>
+                                    <span className="font-black text-xl group-hover:translate-x-2 transition-transform duration-300">
+                                        {item}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button 
+                            onClick={() => navigate('/admin/login')}
+                            className="group mt-10 px-10 py-6 bg-white text-[#16516f] rounded-2xl font-black text-lg shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105 active:scale-95 flex items-center gap-3"
+                        >
+                            Explore Features
+                            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                        </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {pricing.map((p, i) => (
-                            <div key={i} className={`p-10 rounded-3xl border flex flex-col ${p.active ? 'bg-white text-slate-900 border-white shadow-2xl scale-105 z-10' : 'bg-[#1a5b7d] border-white/20'}`}>
-                                <p className="font-bold text-sm mb-2 uppercase tracking-widest">{p.name}</p>
-                                <div className="flex items-end gap-1 mb-8">
-                                    <span className="text-4xl font-black">Rs. {p.price}</span>
-                                    <span className="text-xs opacity-60 mb-2">/month</span>
-                                </div>
-                                <div className="space-y-4 flex-1 mb-10">
-                                    {p.features.map(feat => (
-                                        <div key={feat} className="flex items-center gap-3 text-sm font-medium">
-                                            <CheckCircle2 className={`w-4 h-4 ${p.active ? 'text-[#16516f]' : 'text-emerald-400'}`} /> {feat}
-                                        </div>
-                                    ))}
-                                </div>
-                                <button className={`w-full py-4 rounded-xl font-bold transition-all ${p.active ? 'bg-[#16516f] text-white hover:bg-[#114058]' : 'bg-white text-[#16516f] hover:bg-slate-100'}`}>
-                                    {p.button}
-                                </button>
-                            </div>
-                        ))}
+
+                    <div className="relative">
+                        <div className="absolute -inset-10 bg-gradient-to-r from-orange-400/30 to-purple-400/30 rounded-[4rem] blur-3xl animate-pulse-slow"></div>
+
+                        <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 backdrop-blur-sm hover:scale-105 transition-transform duration-700">
+                            <img
+                                src="/landing-qr.jpg"
+                                alt="QR Scanning"
+                                className="w-full h-auto"
+                            />
+                        </div>
+
+                        <div className="absolute -top-10 -right-10 bg-gradient-to-br from-orange-400 to-red-500 p-8 rounded-3xl shadow-2xl animate-float">
+                            <QrCode className="w-14 h-14 text-white" />
+                        </div>
+
+                        <div className="absolute -bottom-10 -left-10 bg-gradient-to-br from-[#16516f] to-[#1a5b7d] p-6 rounded-3xl shadow-2xl animate-float-delay">
+                            <Heart className="w-10 h-10 text-white fill-white" />
+                        </div>
                     </div>
                 </div>
             </section>
 
             {/* FAQ Section */}
-            <section className="py-24 max-w-3xl mx-auto px-6">
-                <h2 className="text-3xl lg:text-4xl font-bold text-center mb-12">Frequently Asked Questions</h2>
-                <div className="space-y-4">
+            <section className="py-32 max-w-5xl mx-auto px-6">
+                <div className="text-center mb-20 space-y-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#16516f]/10 to-orange-500/10 border-2 border-[#16516f]/20">
+                        <Sparkles className="w-4 h-4 text-[#16516f]" />
+                        <span className="text-sm font-black text-[#16516f] uppercase tracking-widest">FAQ</span>
+                    </div>
+                    <h2 className="text-6xl lg:text-7xl font-black text-slate-900">
+                        Got <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16516f] to-orange-500">Questions?</span>
+                    </h2>
+                    <p className="text-2xl text-slate-600 font-semibold">We've got answers</p>
+                </div>
+
+                <div className="space-y-5">
                     {faqs.map((f, i) => (
-                        <div key={i} className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                        <div
+                            key={i}
+                            className="bg-white/90 backdrop-blur-sm border-2 border-slate-200/50 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 hover:border-[#16516f]/40"
+                        >
                             <button
                                 onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                                className="w-full flex items-center justify-between p-6 bg-white hover:bg-slate-50 transition-colors"
+                                className="w-full flex items-center justify-between p-8 hover:bg-gradient-to-r hover:from-[#16516f]/5 hover:to-orange-500/5 transition-colors group"
                             >
-                                <span className="font-bold text-slate-800 text-left">{f.q}</span>
-                                <ChevronDown className={`w-5 h-5 transition-transform ${activeFaq === i ? 'rotate-180' : ''}`} />
+                                <span className="font-black text-xl text-slate-800 text-left pr-4 group-hover:text-[#16516f] transition-colors">{f.q}</span>
+                                <ChevronDown
+                                    className={`w-7 h-7 text-[#16516f] transition-transform duration-300 flex-shrink-0 ${activeFaq === i ? 'rotate-180' : ''
+                                        }`}
+                                />
                             </button>
-                            {activeFaq === i && (
-                                <div className="p-6 bg-slate-50 text-slate-600 text-sm leading-relaxed border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+
+                            <div
+                                className={`overflow-hidden transition-all duration-500 ${activeFaq === i ? 'max-h-96' : 'max-h-0'
+                                    }`}
+                            >
+                                <div className="p-8 pt-0 text-slate-600 leading-relaxed font-semibold text-lg">
                                     {f.a}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     ))}
                 </div>
             </section>
 
             {/* CTA Section */}
-            <section className="py-24 px-6">
-                <div className="max-w-5xl mx-auto bg-gradient-to-r from-orange-400 to-orange-500 rounded-[3rem] p-12 lg:p-20 text-center space-y-8 shadow-2xl shadow-orange-500/20 text-white">
-                    <h2 className="text-4xl lg:text-6xl font-black tracking-tight">Ready to transform your restaurant?</h2>
-                    <p className="text-lg text-orange-50 font-medium max-w-2xl mx-auto opacity-90">
-                        Join 50+ restaurants who have already switched to LeafClutch Technology. Get your digital menu ready in minutes.
+            <section className="relative py-32 px-6 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#16516f] via-[#1a5b7d] to-[#11425c]"></div>
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC4xIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-10"></div>
+
+                <div className="relative max-w-6xl mx-auto text-center space-y-12 text-white">
+                    <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/30">
+                        <Sparkles className="w-5 h-5 animate-pulse" />
+                        <span className="text-sm font-black uppercase tracking-widest">Join 500+ Restaurants</span>
+                    </div>
+
+                    <h2 className="text-6xl lg:text-8xl font-black tracking-tight leading-tight">
+                        Ready to transform
+                        <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-orange-200">your restaurant?</span>
+                    </h2>
+
+                    <p className="text-2xl text-white/95 font-semibold max-w-3xl mx-auto leading-relaxed">
+                        Get your digital menu ready in minutes. No credit card required.
+                        <span className="font-black"> Start your free trial today.</span>
                     </p>
-                    <div className="flex flex-wrap justify-center gap-4 pt-4">
-                        <button className="bg-white text-orange-600 px-10 py-5 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all text-lg">
-                            Start Your Free Trial
+
+                    <div className="flex flex-wrap justify-center gap-6 pt-8">
+                        <button 
+                            onClick={() => navigate('/admin/login')}
+                            className="group px-12 py-7 bg-white text-[#16516f] rounded-2xl font-black text-xl shadow-2xl hover:shadow-white/50 transition-all duration-300 hover:scale-110 active:scale-95"
+                        >
+                            <span className="flex items-center gap-3">
+                                Start Free Trial
+                                <ArrowRight className="w-7 h-7 group-hover:translate-x-2 transition-transform" />
+                            </span>
                         </button>
-                        <button className="bg-[#16516f] text-white px-10 py-5 rounded-2xl font-black shadow-xl hover:scale-105 active:scale-95 transition-all text-lg flex items-center gap-2">
-                            <Smartphone className="w-5 h-5" /> Download App
+
+                        <button className="px-12 py-7 bg-white/10 backdrop-blur-sm text-white border-2 border-white/40 rounded-2xl font-black text-xl hover:bg-white/20 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center gap-3">
+                            <Smartphone className="w-7 h-7" />
+                            Download App
                         </button>
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="bg-slate-900 py-16 text-white border-t border-slate-800">
+            <footer className="relative bg-white/80 backdrop-blur-2xl py-24 border-t border-slate-200/50 shadow-xl shadow-slate-900/5">
                 <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
-                    <div className="col-span-1 md:col-span-2 space-y-6">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-[#16516f] rounded-lg flex items-center justify-center">
-                                <LayoutDashboard className="w-5 h-5 text-white" />
+                    <div className="col-span-1 md:col-span-2 space-y-8">
+                        <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-gradient-to-br from-[#16516f] to-[#1a5b7d] rounded-2xl flex items-center justify-center shadow-2xl p-2">
+                                <img src={logo} alt="LeafClutch Logo" className="w-full h-full object-contain" />
                             </div>
-                            <span className="text-xl font-bold tracking-tight">LeafClutch Technology</span>
+                            <span className="text-3xl font-black text-slate-900">
+                                <span className="text-slate-900">Leaf</span>
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16516f] to-[#1a5b7d]">Clutch</span>
+                            </span>
                         </div>
-                        <p className="text-slate-400 max-w-md text-sm leading-relaxed italic">
-                            Empowering the hospitality industry with cutting-edge digital solutions. From street food stalls to luxury resorts, LeafClutch is your partner in growth.
+                        <p className="text-slate-600 max-w-lg leading-relaxed text-lg font-medium">
+                            Empowering the hospitality industry with cutting-edge digital solutions.
+                            From street food stalls to luxury resorts, we're your partner in growth.
                         </p>
                     </div>
+
                     <div>
-                        <h4 className="font-bold mb-6 text-slate-300 uppercase tracking-widest text-xs">Product</h4>
-                        <ul className="space-y-4 text-sm text-slate-400">
-                            <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Digital Menu</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">QR Ordering</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                        <h4 className="font-black mb-8 text-slate-700 uppercase tracking-widest text-sm">Product</h4>
+                        <ul className="space-y-4 text-slate-600">
+                            {["Features", "Digital Menu", "QR Ordering", "Inventory"].map(item => (
+                                <li key={item}>
+                                    <a href="#" className="hover:text-[#16516f] transition-colors hover:translate-x-2 inline-block font-semibold">
+                                        {item}
+                                    </a>
+                                </li>
+                            ))}
                         </ul>
                     </div>
+
                     <div>
-                        <h4 className="font-bold mb-6 text-slate-300 uppercase tracking-widest text-xs">Company</h4>
-                        <ul className="space-y-4 text-sm text-slate-400">
-                            <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                        <h4 className="font-black mb-8 text-slate-700 uppercase tracking-widest text-sm">Company</h4>
+                        <ul className="space-y-4 text-slate-600">
+                            {["About", "Contact", "Privacy", "Terms"].map(item => (
+                                <li key={item}>
+                                    <a href="#" className="hover:text-[#16516f] transition-colors hover:translate-x-2 inline-block font-semibold">
+                                        {item}
+                                    </a>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 </div>
-                <div className="max-w-7xl mx-auto px-6 pt-12 mt-12 border-t border-slate-800 text-center text-slate-500 text-sm">
-                    &copy; {new Date().getFullYear()} LeafClutch Technology. All rights reserved. Made for modern hospitality.
+
+                <div className="max-w-7xl mx-auto px-6 pt-16 mt-16 border-t border-slate-200/50 text-center">
+                    <p className="text-slate-500 font-semibold text-lg">
+                        &copy; {new Date().getFullYear()} LeafClutch Technology. Crafted with <Heart className="w-5 h-5 inline text-red-500 fill-red-500" /> for modern hospitality.
+                    </p>
                 </div>
             </footer>
 
-            {/* Custom Styles for animations */}
+            {/* Custom Animations */}
             <style>{`
-        @keyframes bounce-subtle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 3s infinite ease-in-out;
-        }
-      `}</style>
+                @keyframes blob {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    25% { transform: translate(20px, -50px) scale(1.1); }
+                    50% { transform: translate(-20px, 20px) scale(0.9); }
+                    75% { transform: translate(50px, 50px) scale(1.05); }
+                }
+                .animate-blob {
+                    animation: blob 8s infinite ease-in-out;
+                }
+                .animation-delay-2000 {
+                    animation-delay: 2s;
+                }
+                .animation-delay-4000 {
+                    animation-delay: 4s;
+                }
+                @keyframes gradient {
+                    0%, 100% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                }
+                .animate-gradient {
+                    background-size: 200% 200%;
+                    animation: gradient 4s ease infinite;
+                }
+                @keyframes pulse-slow {
+                    0%, 100% { opacity: 0.6; }
+                    50% { opacity: 1; }
+                }
+                .animate-pulse-slow {
+                    animation: pulse-slow 5s ease-in-out infinite;
+                }
+                @keyframes bounce-slow {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-25px); }
+                }
+                .animate-bounce-slow {
+                    animation: bounce-slow 4s ease-in-out infinite;
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px) rotate(0deg); }
+                    50% { transform: translateY(-25px) rotate(5deg); }
+                }
+                .animate-float {
+                    animation: float 7s ease-in-out infinite;
+                }
+                .animate-float-delay {
+                    animation: float 7s ease-in-out infinite;
+                    animation-delay: 1.5s;
+                }
+                .animate-float-delay-2 {
+                    animation: float 7s ease-in-out infinite;
+                    animation-delay: 3s;
+                }
+                @keyframes fade-in {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in {
+                    animation: fade-in 1s ease-out;
+                }
+                @keyframes slide-up {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-slide-up {
+                    animation: slide-up 1s ease-out;
+                }
+                .animate-slide-up-delay {
+                    animation: slide-up 1s ease-out 0.2s both;
+                }
+                .animate-slide-up-delay-2 {
+                    animation: slide-up 1s ease-out 0.4s both;
+                }
+                .animate-slide-up-delay-3 {
+                    animation: slide-up 1s ease-out 0.6s both;
+                }
+            `}</style>
         </div>
     );
 };

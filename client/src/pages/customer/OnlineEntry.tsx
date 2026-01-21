@@ -56,7 +56,7 @@ const OnlineEntry: React.FC = () => {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
+                placeholder="Nishan Dhakal"
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16516f] transition-all"
                 required
               />
@@ -71,7 +71,7 @@ const OnlineEntry: React.FC = () => {
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="98XXXXXXXX"
+                placeholder="9800000000"
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16516f] transition-all"
                 required
               />

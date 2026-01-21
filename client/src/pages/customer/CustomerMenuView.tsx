@@ -1,8 +1,5 @@
-
-
-
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Search, ShoppingCart, X, Plus, Minus, Trash2, Check, ArrowLeft, MapPin } from "lucide-react";
 import { useMenuStore } from "../../store/useMenuStore";
 import { useCustomerOrderStore } from "../../store/useCustomerOrderStore";
@@ -10,7 +7,6 @@ import { useCustomerCartStore } from "../../store/useCustomerCartStore";
 
 import type { MenuItem } from "../../types/menu";
 
-// Top category images (these are just for display, user picks from all admin categories)
 const TOP_CATEGORIES = [
   { name: "All", icon: "🍽️" },
   { name: "Tea", icon: "🍵" },
@@ -36,6 +32,10 @@ function getImageProps(image: any, name: string) {
 const CustomerMenuView: React.FC = () => {
   const { tableId } = useParams<{ tableId?: string }>();
   const navigate = useNavigate();
+  // Extract customer details from query params
+  const [searchParams] = useSearchParams();
+  const customerName = searchParams.get('name');
+  const customerPhone = searchParams.get('phone');
 
   // Import categories and raw items from menu store
   const { fetchAll, categories, items } = useMenuStore();
@@ -93,6 +93,8 @@ const CustomerMenuView: React.FC = () => {
         items: cart, // cart is already (MenuItem & { quantity })[]
         customerType: (tableId ? "DINE_IN" : "ONLINE") as "DINE_IN" | "ONLINE",
         tableCode: tableId ? tableId.toUpperCase() : undefined,
+        customerName: customerName || undefined,
+        mobileNumber: customerPhone || undefined,
       };
 
       // Call createOrder from store
@@ -104,8 +106,6 @@ const CustomerMenuView: React.FC = () => {
         setShowCart(false);
         setShowOrderSuccess(true);
 
-        // Refresh orders list to show the new order
-        // The store will automatically update
       } else {
         throw new Error("Order creation failed - no response from server");
       }

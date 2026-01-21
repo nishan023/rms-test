@@ -54,7 +54,15 @@ export const createOrUpdateOrderService = async (data: CreateOrderInput) => {
     }
 
     if (!targetTableCode) {
-        if (customerType === 'ONLINE') targetTableCode = 'ONLINE';
+        if (customerType === 'ONLINE') {
+            // Generate unique table code for online orders to prevent merging
+            // If phone is provided, use it to group orders for that user, otherwise unique timestamp
+            if (mobileNumber) {
+                targetTableCode = `ONLINE-${mobileNumber}`;
+            } else {
+                targetTableCode = `ONLINE-${Date.now()}`;
+            }
+        }
         else throw new AppError('Table code is required', 400);
     }
 

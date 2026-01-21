@@ -21,12 +21,18 @@ import LandingPage from '../pages/LandingPage';
 import ReportsView from '../pages/admin/ReportsView';
 
 // Admin Pages
+import OnlineEntry from '../pages/customer/OnlineEntry';
 
 export const router = createBrowserRouter([
   // Landing Page
   {
     path: '/',
     element: <LandingPage />
+  },
+  // Online Entry
+  {
+    path: '/Online',
+    element: <OnlineEntry />
   },
   // Customer Routes
   {

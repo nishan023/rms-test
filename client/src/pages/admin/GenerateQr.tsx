@@ -120,7 +120,6 @@ const GenerateQr = () => {
       return;
     }
 
-    // Always create as PHYSICAL for these tabs
     const type: "PHYSICAL" | "WALK_IN" | "ONLINE" = "PHYSICAL";
 
     await handleCreateTable(type, newTableName);

@@ -258,11 +258,15 @@ const AdminOrdersView = () => {
                             displayedOrders.map((order) => {
                                 const tableCode = order.table?.tableCode || order.tableNumber || "";
                                 const isWalkIn = tableCode.startsWith("WALKIN");
+                                const isOnline = tableCode.startsWith("ONLINE");
 
-                                // Header: Use customer name for walk-in, table code for others
-                                const headerText = isWalkIn
-                                    ? (order.customerName || "Walk-in")
-                                    : tableCode;
+                                // Header Logic
+                                let headerText = tableCode;
+                                if (isWalkIn) {
+                                    headerText = order.customerName || "Walk-in";
+                                } else if (isOnline) {
+                                    headerText = order.customerPhone || tableCode.replace("ONLINE-", "") || "Online Order";
+                                }
 
                                 return (
                                     <div

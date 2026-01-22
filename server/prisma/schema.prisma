@@ -43,6 +43,7 @@ model MenuItem {
   name        String
   categoryId  String       @db.Uuid
   price       Decimal
+  department  Department   @default(OTHERS)
   isAvailable Boolean      @default(true)
   isSpecial   Boolean      @default(false)
   createdAt   DateTime     @default(now())
@@ -52,6 +53,7 @@ model MenuItem {
   category    MenuCategory @relation(fields: [categoryId], references: [id])
   orderItems  OrderItem[]
 
+  @@index([department])
   @@map("menu_items")
 }
 
@@ -243,4 +245,12 @@ enum TransactionType {
   ORDER_CONSUMPTION
   ADJUSTMENT
   RETURN
+}
+
+enum Department {
+  KITCHEN
+  SMOKES
+  DRINKS
+  BEER
+  OTHERS
 }

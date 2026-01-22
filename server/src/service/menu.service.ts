@@ -1,3 +1,4 @@
+import type { Department } from '@prisma/client';
 import prisma from '../config/prisma.ts';
 import { AppError } from '../utils/appError.ts';
 
@@ -12,6 +13,7 @@ export const getPublicMenuService = async () => {
                     isAvailable: true,
                     isSpecial: true,
                     isVeg: true,
+                    department: true,
                 },
                 orderBy: {
                     name: 'asc',
@@ -37,14 +39,15 @@ export const createMenuItemService = async (data: {
     name: string;
     categoryId: string;
     price: number;
+    department: Department;
     isAvailable?: boolean;
     isSpecial?: boolean;
     isVeg?: boolean;
 }) => {
-    const { name, categoryId, price, isAvailable, isSpecial, isVeg } = data;
+    const { name, categoryId, price, department, isAvailable, isSpecial, isVeg } = data;
 
-    if (!name || !categoryId || price === undefined) {
-        throw new AppError('Name, categoryId, and price are required', 400);
+    if (!name || !categoryId || !department || price === undefined) {
+        throw new AppError('Name, categoryId, department, and price are required', 400);
     }
 
     // Check if category exists
@@ -61,6 +64,7 @@ export const createMenuItemService = async (data: {
             name,
             categoryId,
             price: Number(price),
+            department,
             isAvailable: isAvailable !== undefined ? String(isAvailable) === 'true' : true,
             isSpecial: isSpecial !== undefined ? String(isSpecial) === 'true' : false,
             isVeg: isVeg !== undefined ? String(isVeg) === 'true' : true,
@@ -82,6 +86,7 @@ export const updateMenuItemService = async (
     data: {
         name?: string;
         categoryId?: string;
+        department?: Department;
         price?: number;
         isAvailable?: boolean;
         isSpecial?: boolean;
@@ -115,11 +120,7 @@ export const updateMenuItemService = async (
     const updatedItem = await prisma.menuItem.update({
         where: { id },
         data: {
-            ...data,
-            price: data.price !== undefined ? Number(data.price) : undefined,
-            isAvailable: data.isAvailable !== undefined ? String(data.isAvailable) === 'true' : undefined,
-            isSpecial: data.isSpecial !== undefined ? String(data.isSpecial) === 'true' : undefined,
-            isVeg: data.isVeg !== undefined ? String(data.isVeg) === 'true' : undefined,
+            ...data
         },
         include: {
             category: true,

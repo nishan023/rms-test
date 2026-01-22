@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Search, Trash2, ToggleLeft, ToggleRight, Star } from "lucide-react";
+import { Plus, Search, Trash2, ToggleLeft, ToggleRight, Star, X } from "lucide-react";
 import ToggleSideBar from "../../components/admin/ToggleSideBar";
 import EditMenuItemModal from "../../components/admin/EditMenuItemModal";
 import ConfirmModal from "../../components/common/ConfirmModal";
@@ -25,8 +25,8 @@ const AdminMenuView: React.FC = () => {
   } = useMenuStore();
 
   useEffect(() => {
-    fetchAll()
-  }, [])
+    fetchAll();
+  }, []);
 
   const menuItems = getFilteredItems();
 
@@ -67,6 +67,19 @@ const AdminMenuView: React.FC = () => {
     }
   };
 
+  // Helper to pretty-print department
+  const getDepartmentLabel = (department?: string) => {
+    if (!department) return "";
+    // You may want to show a friendlier label here instead of uppercase.
+    // E.g., KITCHEN -> Kitchen, DRINKS -> Drinks, etc
+    return department.charAt(0).toUpperCase() + department.slice(1).toLowerCase();
+  };
+
+  // Handler to clear search
+  const handleClearSearch = () => {
+    setSearchQuery("");
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
       {/* HEADER */}
@@ -99,14 +112,35 @@ const AdminMenuView: React.FC = () => {
         {/* SEARCH & FILTER */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search menu items..."
-              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+              className="w-full pl-10 pr-10 py-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                tabIndex={0}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  margin: 0,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
           <select
@@ -160,7 +194,14 @@ const AdminMenuView: React.FC = () => {
                       <h3 className="font-bold text-lg">{item.name}</h3>
                       <span>{item.isVeg ? "🟢" : "🔴"}</span>
                     </div>
-                    <p className="text-sm text-gray-600">{item.category}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-gray-600">{item.category}</p>
+                      <span className="mx-1 text-gray-400">|</span>
+                      {/* Department field from backend */}
+                      <span className="text-xs rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 ml-0">
+                        {getDepartmentLabel(item.department)}
+                      </span>
+                    </div>
                     <p className="text-orange-600 font-bold text-xl mt-1">
                       Rs. {item.price}
                     </p>

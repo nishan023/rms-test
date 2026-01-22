@@ -4,7 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useMenuStore } from "../../store/useMenuStore";
 import toast from "react-hot-toast";
 
-// Removed hardcoded CATEGORIES
+// Department options
+const DEPARTMENTS = [
+  { id: 'kitchen', name: 'Kitchen', icon: '🍽️' },
+  { id: 'drinks', name: 'Drinks', icon: '☕' },
+  { id: 'beer', name: 'Beer', icon: '🍺' },
+  { id: 'smokes', name: 'Smokes', icon: '💨' },
+];
 
 const AdminAddMenuView = () => {
   const navigate = useNavigate();
@@ -13,25 +19,22 @@ const AdminAddMenuView = () => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState<number | "">("");
   const [categoryId, setCategoryId] = useState("");
+  const [department, setDepartment] = useState(""); // NEW: Department state
   const [isVeg, setIsVeg] = useState(true);
   const [isSpecial, setIsSpecial] = useState(false);
   const [isAvailable, setIsAvailable] = useState(true);
   const [priceError, setPriceError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-
-  const { addItem, categories, fetchAll } = useMenuStore()
+  const { addItem, categories, fetchAll } = useMenuStore();
 
   React.useEffect(() => {
     fetchAll();
   }, []);
 
-  // Removed image handlers
-
   // ===== PRICE HANDLER =====
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Accept blank input
     if (value === "") {
       setPrice("");
       setPriceError("");
@@ -51,8 +54,8 @@ const AdminAddMenuView = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || price === "" || !categoryId) {
-      alert("Please fill all required fields");
+    if (!name || price === "" || !categoryId || !department) {
+      alert("Please fill all required fields including department");
       return;
     }
 
@@ -69,10 +72,14 @@ const AdminAddMenuView = () => {
     setIsSubmitting(true);
 
     try {
+      // Convert department to uppercase for database
+      const departmentUpper = department.toUpperCase() as 'KITCHEN' | 'DRINKS' | 'BEER' | 'SMOKES';
+      
       const payload = {
         name,
         price,
         categoryId,
+        department: departmentUpper, // Send uppercase to match DB enum
         isVeg,
         isAvailable,
         isSpecial,
@@ -91,8 +98,6 @@ const AdminAddMenuView = () => {
   const RequiredAsterisk = () => (
     <span className="text-orange-600 font-bold ml-1">*</span>
   );
-
-  // Removed unused OrangeCheckbox
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -114,7 +119,6 @@ const AdminAddMenuView = () => {
         <main className="flex-1 overflow-y-auto p-4 lg:p-8">
           <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm p-6 lg:p-8">
             <form className="space-y-6" onSubmit={handleSubmit}>
-
               {/* NAME + PRICE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -126,6 +130,7 @@ const AdminAddMenuView = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     type="text"
+                    placeholder="e.g., Chicken Biryani"
                     className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
                     disabled={isSubmitting}
                   />
@@ -141,34 +146,65 @@ const AdminAddMenuView = () => {
                     min={0}
                     onChange={handlePriceChange}
                     type="number"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 ${priceError ? 'border-red-500' : ''}`}
+                    placeholder="0"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 ${
+                      priceError ? "border-red-500" : ""
+                    }`}
                     disabled={isSubmitting}
                   />
                   {priceError && (
-                    <span className="text-xs text-red-600 mt-1 block">{priceError}</span>
+                    <span className="text-xs text-red-600 mt-1 block">
+                      {priceError}
+                    </span>
                   )}
                 </div>
               </div>
 
-              {/* CATEGORY */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Category
-                  <RequiredAsterisk />
-                </label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
-                  disabled={isSubmitting}
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.categoryId} value={cat.categoryId}>
-                      {cat.categoryName}
-                    </option>
-                  ))}
-                </select>
+              {/* CATEGORY + DEPARTMENT */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Category
+                    <RequiredAsterisk />
+                  </label>
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.categoryId} value={cat.categoryId}>
+                        {cat.categoryName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* NEW: DEPARTMENT DROPDOWN */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Department
+                    <RequiredAsterisk />
+                  </label>
+                  <select
+                    value={department}
+                    onChange={(e) => {
+                      console.log('Department changed:', e.target.value);
+                      setDepartment(e.target.value);
+                    }}
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500"
+                    disabled={isSubmitting}
+                  >
+                    <option value="">Select department</option>
+                    {DEPARTMENTS.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.icon} {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* FOOD TYPE - RADIO BUTTONS */}
@@ -209,19 +245,28 @@ const AdminAddMenuView = () => {
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <span
                       className={`relative inline-flex items-center justify-center w-5 h-5 border-2 rounded-md transition-colors
-                      ${isAvailable ? 'border-orange-600 bg-orange-600' : 'border-gray-300 bg-white'} mr-1`}
+                      ${
+                        isAvailable
+                          ? "border-orange-600 bg-orange-600"
+                          : "border-gray-300 bg-white"
+                      } mr-1`}
                       style={{ transition: "background 0.15s, border 0.15s" }}
                     >
                       <input
                         type="checkbox"
                         checked={isAvailable}
                         id="available-checkbox"
-                        onChange={() => !isSubmitting && setIsAvailable(!isAvailable)}
+                        onChange={() =>
+                          !isSubmitting && setIsAvailable(!isAvailable)
+                        }
                         className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
                         disabled={isSubmitting}
                       />
                       {isAvailable && (
-                        <Check className="w-4 h-4 text-white pointer-events-none" strokeWidth={3} />
+                        <Check
+                          className="w-4 h-4 text-white pointer-events-none"
+                          strokeWidth={3}
+                        />
                       )}
                     </span>
                     <span>Available</span>
@@ -235,7 +280,11 @@ const AdminAddMenuView = () => {
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <span
                       className={`relative inline-flex items-center justify-center w-5 h-5 border-2 rounded-md transition-colors
-        ${isSpecial ? 'border-orange-600 bg-orange-600' : 'border-gray-300 bg-white'} mr-1`}
+        ${
+          isSpecial
+            ? "border-orange-600 bg-orange-600"
+            : "border-gray-300 bg-white"
+        } mr-1`}
                       style={{ transition: "background 0.15s, border 0.15s" }}
                     >
                       <input
@@ -247,7 +296,10 @@ const AdminAddMenuView = () => {
                         disabled={isSubmitting}
                       />
                       {isSpecial && (
-                        <Check className="w-4 h-4 text-white pointer-events-none" strokeWidth={3} />
+                        <Check
+                          className="w-4 h-4 text-white pointer-events-none"
+                          strokeWidth={3}
+                        />
                       )}
                     </span>
                     <span>Special Category</span>
@@ -255,12 +307,11 @@ const AdminAddMenuView = () => {
                 </div>
               </div>
 
-
               {/* BUTTONS */}
               <div className="flex gap-4 pt-6">
                 <button
                   type="submit"
-                  className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700"
+                  className="flex-1 bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Saving..." : "Save Item"}
@@ -268,7 +319,7 @@ const AdminAddMenuView = () => {
                 <button
                   type="button"
                   onClick={() => !isSubmitting && navigate("/admin/menu")}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300"
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isSubmitting}
                 >
                   Cancel

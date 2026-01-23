@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Download,
-  Filter,
   ChefHat,
   Coffee,
   Cigarette,

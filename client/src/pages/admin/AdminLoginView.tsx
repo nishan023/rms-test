@@ -57,11 +57,11 @@ const AdminLoginView: React.FC = () => {
           </div>
 
           <h1 className="text-3xl font-black text-slate-900">
-            Leaf<span className="text-[#16516f]">Clutch</span>
+            Aaradhya<span className="text-[#16516f]">Restaurant</span>
           </h1>
 
           <p className="text-sm text-slate-500 text-center">
-            Admin access to your restaurant dashboard
+            <p>Created by:<a href='https://leafclutchtech.com.np/'>Leafclutch Technologies Pvt.Ltd. </a></p>
           </p>
         </div>
 

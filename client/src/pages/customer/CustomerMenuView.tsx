@@ -157,7 +157,7 @@ const CustomerMenuView: React.FC = () => {
             <div className="text-3xl lg:text-4xl">🍽️</div>
             <div>
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Leafclutch Technologies
+                Aaradhya Restaurant
               </h1>
               {tableId ? (
                 <div className="flex items-center gap-1 text-xs lg:text-sm">
@@ -168,7 +168,7 @@ const CustomerMenuView: React.FC = () => {
                   </span>
                 </div>
               ) : (
-                <p className="text-xs lg:text-sm text-gray-600">⭐ 77°C</p>
+                <p className="text-xs lg:text-sm text-gray-600">Online Order</p>
               )}
             </div>
           </div>
